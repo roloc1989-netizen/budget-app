@@ -106,8 +106,8 @@
             font-weight: 600;
             cursor: pointer;
         }
-        .delete-btn { background: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
-        .edit-btn { background: #f59e0b; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; margin-right: 6px; }
+        .delete-btn { background: #ef4444; padding: 6px 14px; border-radius: 30px; font-size: 0.8rem; }
+        .edit-btn { background: #f59e0b; padding: 6px 14px; border-radius: 30px; font-size: 0.8rem; margin-right: 8px; }
         .search-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
         .stats-grid {
             display: grid;
@@ -130,8 +130,39 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
         .calendar-day { background: #f1f5f9; border-radius: 16px; padding: 8px; text-align: center; cursor: pointer; }
         .dark .calendar-day { background: #0f172a; }
-        .shopping-item { display: flex; gap: 12px; padding: 8px; border-bottom: 1px solid #e2e8f0; align-items: center; }
+        .shopping-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
         .dark .shopping-item { border-bottom-color: #334155; }
+        .shopping-item input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            margin: 0;
+            cursor: pointer;
+        }
+        .shopping-item .item-name {
+            flex: 1;
+            font-size: 1.1rem;
+        }
+        .shopping-item .delete-btn {
+            background: #ef4444;
+            padding: 6px 16px;
+            border-radius: 30px;
+        }
+        .food-form {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .food-form input {
+            flex: 1;
+            min-width: 120px;
+        }
     </style>
 </head>
 <body>
@@ -164,22 +195,41 @@
             <h3>📋 История покупок</h3>
             <div class="search-bar"><input type="text" id="searchInput" placeholder="🔍 Название"><select id="periodSelect"><option value="all">Все</option><option value="day">День</option><option value="week">Неделя</option><option value="month">Месяц</option></select><button id="searchBtn">Найти</button></div>
             <div id="searchResultTotal" style="margin-bottom: 12px;"></div>
-            <div class="table-wrapper"><table id="purchasesTable"><thead><tr><th data-sort="date">Дата</th><th>Название</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr></thead><tbody id="tableBody"></tbody></table></div>
+            <div class="table-wrapper"><table id="purchasesTable"><thead><tr><th data-sort="date">Дата</th><th>Название</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr></thead><tbody id="tableBody"></tbody><tr></div>
         </div>
     </div>
 
     <div class="tab-pane" id="tab-stats"><div class="stats-grid" id="statsGrid"></div><div class="card"><canvas id="categoryChart"></canvas></div></div>
     <div class="tab-pane" id="tab-calendar"><div class="card"><div id="calendar"></div></div></div>
-    <div class="tab-pane" id="tab-shopping"><div class="card"><h3>🛒 Список покупок</h3><textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea><button id="addShoppingListBtn">📥 Добавить JSON</button><div style="display:flex; gap:6px; margin:12px 0"><input id="newItemName" placeholder="Новый товар"><button id="addItemBtn">➕</button></div><div id="shoppingListContainer"></div></div></div>
+    
+    <!-- Список покупок (улучшенный) -->
+    <div class="tab-pane" id="tab-shopping">
+        <div class="card">
+            <h3>🛒 Список покупок</h3>
+            <textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea>
+            <button id="addShoppingListBtn" style="margin: 8px 0;">📥 Добавить список (JSON)</button>
+            <div style="display: flex; gap: 10px; margin: 16px 0;">
+                <input id="newItemName" placeholder="Новый товар" style="flex: 2;">
+                <button id="addItemBtn">➕ Добавить</button>
+            </div>
+            <div id="shoppingListContainer"></div>
+        </div>
+    </div>
 
     <!-- Калории -->
     <div class="tab-pane" id="tab-calories">
         <div class="card">
             <h3>🍎 Дневник питания</h3>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-                <input id="foodName" placeholder="Продукт" style="flex:2"><input id="foodCalories" placeholder="ккал" type="number" step="1" style="flex:1"><input type="date" id="foodDate" style="flex:1"><button id="addFoodBtn">➕ Добавить</button>
+            <div class="food-form">
+                <input id="foodName" placeholder="Продукт">
+                <input id="foodCalories" placeholder="ккал" type="number" step="1">
+                <input type="date" id="foodDate">
+                <button id="addFoodBtn">➕ Добавить</button>
             </div>
-            <div class="stats-grid" style="grid-template-columns: repeat(2,1fr);"><div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div><div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (норма 2000)</div></div></div>
+            <div class="stats-grid" style="grid-template-columns: repeat(2,1fr);">
+                <div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div>
+                <div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (норма 2000)</div></div>
+            </div>
             <div class="table-wrapper"><table id="caloriesTable"><thead><tr><th>Дата</th><th>Продукт</th><th>ккал</th><th></th></tr></thead><tbody id="caloriesBody"></tbody></table></div>
         </div>
     </div>
@@ -212,7 +262,6 @@
             yandexToken = params.get('access_token');
             localStorage.setItem('yandex_token', yandexToken);
             window.location.hash = '';
-            alert('✅ Авторизация успешна');
             loadFromDisk();
         }
     }
@@ -229,18 +278,16 @@
                 calories = json.calories || [];
                 saveLocal();
                 renderAll();
-                alert('Данные с Яндекс.Диска');
             } else if(res.status === 404) saveToDisk();
         } catch(e) {}
     }
     async function saveToDisk() {
-        if(!yandexToken) return alert('Войдите в Яндекс');
+        if(!yandexToken) return;
         const content = { purchases, shoppingList, calories };
         try {
             const uploadUrl = await fetch('https://cloud-api.yandex.net/v1/disk/resources/upload?path=/budget_data.json&overwrite=true', { headers: { 'Authorization': `OAuth ${yandexToken}` } }).then(r=>r.json());
             await fetch(uploadUrl.href, { method: 'PUT', body: JSON.stringify(content), headers: { 'Content-Type': 'application/json' } });
-            alert('Сохранено');
-        } catch(e) { alert('Ошибка'); }
+        } catch(e) {}
     }
 
     function guessCategory(name) {
@@ -332,7 +379,7 @@
         for(let d=1; d<=last.getDate(); d++) {
             const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const has = byDate[ds];
-            html += `<div class="calendar-day has-expense" data-date="${ds}">${d}${has ? `<span style="font-size:10px;">${Math.round(has)}₽</span>` : ''}</div>`;
+            html += `<div class="calendar-day" data-date="${ds}">${d}${has ? `<span style="font-size:10px;">${Math.round(has)}₽</span>` : ''}</div>`;
         }
         html += `</div>`;
         document.getElementById('calendar').innerHTML = html;
@@ -340,15 +387,22 @@
     }
     function renderShoppingList() {
         const container = document.getElementById('shoppingListContainer');
-        if(!shoppingList.length) { container.innerHTML = '<p>✨ Пусто</p>'; return; }
+        if(!shoppingList.length) { container.innerHTML = '<div style="padding: 16px; text-align: center;">✨ Список пуст. Добавьте товары!</div>'; return; }
         let html = '';
-        shoppingList.forEach((item, idx) => html += `<div class="shopping-item"><input type="checkbox" ${item.checked ? 'checked' : ''} onchange="window.toggleShopping(${idx})"><span style="flex:1;${item.checked ? 'text-decoration:line-through;opacity:0.6' : ''}">${item.name}</span><button onclick="window.removeShoppingItem(${idx})" class="delete-btn">🗑️</button></div>`);
+        shoppingList.forEach((item, idx) => {
+            html += `<div class="shopping-item">
+                        <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="window.toggleShopping(${idx})">
+                        <span class="item-name" style="${item.checked ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${escapeHtml(item.name)}</span>
+                        <button class="delete-btn" onclick="window.removeShoppingItem(${idx})">🗑️ Удалить</button>
+                    </div>`;
+        });
         container.innerHTML = html;
     }
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m;}); }
     window.toggleShopping = (idx) => { shoppingList[idx].checked = !shoppingList[idx].checked; saveLocal(); renderShoppingList(); saveToDisk(); };
     window.removeShoppingItem = (idx) => { shoppingList.splice(idx,1); saveLocal(); renderShoppingList(); saveToDisk(); };
     function addShoppingItem(name) { if(name && !shoppingList.some(i=>i.name===name)) { shoppingList.push({ name, checked: false }); saveLocal(); renderShoppingList(); saveToDisk(); } }
-    function addShoppingListFromJson(jsonStr) { try { const data = JSON.parse(jsonStr); if(data.list) { data.list.forEach(n => { if(!shoppingList.some(i=>i.name===n)) shoppingList.push({ name:n, checked:false }); }); saveLocal(); renderShoppingList(); saveToDisk(); return true; } } catch(e) { alert('Ошибка JSON'); return false; } }
+    function addShoppingListFromJson(jsonStr) { try { const data = JSON.parse(jsonStr); if(data.list) { data.list.forEach(n => { if(n && !shoppingList.some(i=>i.name===n)) shoppingList.push({ name:n, checked:false }); }); saveLocal(); renderShoppingList(); saveToDisk(); return true; } } catch(e) { alert('Ошибка JSON'); return false; } }
     function addFood() { const name = document.getElementById('foodName').value; const cal = parseInt(document.getElementById('foodCalories').value); const date = document.getElementById('foodDate').value || new Date().toISOString().slice(0,10); if(!name || isNaN(cal)) return alert('Введите продукт и ккал'); calories.push({ id: Date.now(), date, name, calories: cal }); saveLocal(); renderCalories(); saveToDisk(); document.getElementById('foodName').value = ''; document.getElementById('foodCalories').value = ''; }
     function deleteCalorie(id) { calories = calories.filter(c => c.id !== id); saveLocal(); renderCalories(); saveToDisk(); }
     function renderCalories() {
@@ -378,7 +432,7 @@
     document.getElementById('addShoppingListBtn').onclick = () => { addShoppingListFromJson(document.getElementById('shoppingJsonInput').value); document.getElementById('shoppingJsonInput').value=''; };
     document.getElementById('addItemBtn').onclick = () => { addShoppingItem(document.getElementById('newItemName').value); document.getElementById('newItemName').value=''; };
     document.getElementById('addFoodBtn').onclick = addFood;
-    document.getElementById('syncNowBtn').onclick = () => { if(yandexToken) saveToDisk(); else alert('Войдите в Яндекс'); };
+    document.getElementById('syncNowBtn').onclick = () => { if(yandexToken) saveToDisk(); };
     document.getElementById('loginYandexBtn').onclick = () => { window.location.href = getYandexAuthUrl(); };
     document.querySelectorAll('.tab-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active'); });
     document.querySelectorAll('#purchasesTable th').forEach(th => th.onclick = () => { let field = th.dataset.sort; if(currentSort.field === field) currentSort.order = currentSort.order === 'desc' ? 'asc' : 'desc'; else { currentSort.field = field; currentSort.order = 'desc'; } renderPurchases(); });
