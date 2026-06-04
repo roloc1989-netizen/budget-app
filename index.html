@@ -13,7 +13,7 @@
         .container { max-width: 1200px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
         h1 { font-size: 1.8rem; background: linear-gradient(135deg, #10b981, #059669); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .btn-icon { background: #e2e8f0; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; margin-left: 8px; }
+        .btn-icon { background: #e2e8f0; border: none; padding: 8px 12px; border-radius: 40px; cursor: pointer; margin-left: 4px; }
         .dark .btn-icon { background: #1e293b; color: #e2e8f0; }
         .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
         .tab-btn { background: none; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; }
@@ -38,8 +38,9 @@
         .shopping-item .item-name { flex: 1; }
         .food-form { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
         .food-form input { flex: 1; margin-bottom: 0; }
-        .file-buttons { display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 16px; }
-        .file-buttons button { background: #3b82f6; padding: 8px 16px; font-size: 0.9rem; }
+        .settings-panel { background: #f1f5f9; border-radius: 28px; padding: 16px; margin-bottom: 20px; }
+        .dark .settings-panel { background: #0f172a; }
+        .settings-panel input { margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -47,11 +48,19 @@
     <div class="header">
         <h1>🏠 Мои чеки + 🍎 Калории</h1>
         <div>
-            <button id="exportBtn" class="btn-icon">💾 Экспорт</button>
-            <label for="importFileInput" class="btn-icon" style="cursor: pointer;">📂 Импорт</label>
-            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+            <button id="exportTelegramBtn" class="btn-icon">📤 Telegram</button>
+            <button id="importTelegramBtn" class="btn-icon">📥 Telegram</button>
+            <button id="settingsBtn" class="btn-icon">⚙️</button>
             <button id="themeToggle" class="btn-icon">🌙</button>
         </div>
+    </div>
+
+    <div id="settingsPanel" class="settings-panel" style="display: none;">
+        <h3>⚙️ Настройки Telegram</h3>
+        <input type="text" id="botToken" placeholder="Токен бота (от BotFather)">
+        <input type="text" id="chatId" placeholder="Ваш Telegram ID (от @userinfobot)">
+        <button id="saveSettingsBtn">💾 Сохранить</button>
+        <div id="settingsStatus" style="font-size: 12px; margin-top: 8px;"></div>
     </div>
 
     <div class="tabs">
@@ -78,6 +87,7 @@
 
 <script>
     let purchases = [], shoppingList = [], calories = [];
+    let telegramToken = '', telegramChatId = '';
 
     function saveLocal() {
         localStorage.setItem('purchases', JSON.stringify(purchases));
@@ -89,36 +99,75 @@
         purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
         shoppingList = JSON.parse(localStorage.getItem('shoppingList') || '[]');
         calories = JSON.parse(localStorage.getItem('calories') || '[]');
+        telegramToken = localStorage.getItem('telegram_token') || '';
+        telegramChatId = localStorage.getItem('telegram_chat_id') || '';
         renderAll();
+        updateSettingsUI();
     }
 
-    // Экспорт
-    function exportData() {
+    function updateSettingsUI() {
+        document.getElementById('botToken').value = telegramToken;
+        document.getElementById('chatId').value = telegramChatId;
+    }
+
+    // Telegram синхронизация
+    async function sendToTelegram() {
+        if (!telegramToken || !telegramChatId) {
+            alert('⚠️ Сначала настройте Telegram в ⚙️');
+            return;
+        }
         const data = { purchases, shoppingList, calories };
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `budget_${new Date().toISOString().slice(0,19)}.json`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        alert('✅ Данные сохранены в файл');
+        const text = `#Бэкап_бюджета\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\``;
+        try {
+            const res = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: telegramChatId, text: text, parse_mode: 'Markdown' })
+            });
+            if (res.ok) alert('✅ Данные отправлены в Telegram');
+            else alert('❌ Ошибка отправки');
+        } catch(e) { alert('❌ Ошибка: ' + e.message); }
     }
 
-    // Импорт
-    function importData(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.purchases) purchases = data.purchases;
-                if (data.shoppingList) shoppingList = data.shoppingList;
-                if (data.calories) calories = data.calories;
-                saveLocal();
-                renderAll();
-                alert('✅ Данные импортированы');
-            } catch(err) { alert('Ошибка файла: ' + err.message); }
-        };
-        reader.readAsText(file);
+    async function loadFromTelegram() {
+        if (!telegramToken || !telegramChatId) {
+            alert('⚠️ Сначала настройте Telegram в ⚙️');
+            return;
+        }
+        try {
+            const res = await fetch(`https://api.telegram.org/bot${telegramToken}/getUpdates?limit=10`);
+            const data = await res.json();
+            if (!data.ok) throw new Error('Не удалось получить сообщения');
+            for (let update of data.result.reverse()) {
+                const text = update.message?.text || '';
+                if (text.startsWith('#Бэкап_бюджета')) {
+                    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+                    if (jsonMatch) {
+                        const parsed = JSON.parse(jsonMatch[1]);
+                        purchases = parsed.purchases || [];
+                        shoppingList = parsed.shoppingList || [];
+                        calories = parsed.calories || [];
+                        saveLocal();
+                        renderAll();
+                        alert('✅ Данные загружены из Telegram');
+                        return;
+                    }
+                }
+            }
+            alert('❌ Не найден бэкап в последних сообщениях');
+        } catch(e) { alert('❌ Ошибка: ' + e.message); }
+    }
+
+    function saveSettings() {
+        const token = document.getElementById('botToken').value.trim();
+        const chat = document.getElementById('chatId').value.trim();
+        if (!token || !chat) { alert('Заполните оба поля'); return; }
+        telegramToken = token;
+        telegramChatId = chat;
+        localStorage.setItem('telegram_token', telegramToken);
+        localStorage.setItem('telegram_chat_id', telegramChatId);
+        document.getElementById('settingsStatus').innerHTML = '✅ Настройки сохранены';
+        setTimeout(() => document.getElementById('settingsStatus').innerHTML = '', 2000);
     }
 
     function guessCategory(name) {
@@ -233,8 +282,10 @@
     document.getElementById('addShoppingListBtn').onclick = () => { addShoppingListFromJson(document.getElementById('shoppingJsonInput').value); document.getElementById('shoppingJsonInput').value=''; };
     document.getElementById('addItemBtn').onclick = () => { addShoppingItem(document.getElementById('newItemName').value); document.getElementById('newItemName').value=''; };
     document.getElementById('addFoodBtn').onclick = addFood;
-    document.getElementById('exportBtn').onclick = exportData;
-    document.getElementById('importFileInput').onchange = (e) => { if(e.target.files.length) importData(e.target.files[0]); e.target.value = ''; };
+    document.getElementById('exportTelegramBtn').onclick = sendToTelegram;
+    document.getElementById('importTelegramBtn').onclick = loadFromTelegram;
+    document.getElementById('settingsBtn').onclick = () => { const p = document.getElementById('settingsPanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
+    document.getElementById('saveSettingsBtn').onclick = saveSettings;
     document.querySelectorAll('.tab-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active'); });
     if (localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark');
     document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('darkMode', document.body.classList.contains('dark') ? 'enabled' : 'disabled'); };
