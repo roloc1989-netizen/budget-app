@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Family Budget + Калории</title>
+    <title>Мои чеки + калории</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <link rel="apple-touch-icon" href="icons/icon-152.png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -106,7 +109,6 @@
         .delete-btn { background: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
         .edit-btn { background: #f59e0b; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; margin-right: 6px; }
         .search-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
-        .search-bar input { flex: 2; }
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -125,13 +127,18 @@
         th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; }
         .dark th, .dark td { border-bottom-color: #334155; }
         th { cursor: pointer; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
+        .calendar-day { background: #f1f5f9; border-radius: 16px; padding: 8px; text-align: center; cursor: pointer; }
+        .dark .calendar-day { background: #0f172a; }
+        .shopping-item { display: flex; gap: 12px; padding: 8px; border-bottom: 1px solid #e2e8f0; align-items: center; }
+        .dark .shopping-item { border-bottom-color: #334155; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>🏠 Family Budget + 🍎 Калории</h1>
-        <div><button id="themeToggle" class="btn-icon">🌙 Тёмная</button>
+        <h1>🏠 Мои чеки + 🍎 Калории</h1>
+        <div><button id="themeToggle" class="btn-icon">🌙</button>
         <button id="syncNowBtn" class="btn-icon">🔄 Синхр.</button>
         <button id="loginYandexBtn" class="btn-icon">🔑 Войти</button></div>
     </div>
@@ -145,49 +152,46 @@
         <button class="tab-btn" data-tab="calories">🍎 Калории</button>
     </div>
 
-    <!-- Панель добавления чека (та же) -->
+    <!-- Добавление чека -->
     <div class="tab-pane active" id="tab-add">
         <div class="card"><h3>📦 Добавить чек (JSON)</h3><textarea id="jsonInput" rows="4"></textarea><button id="addJsonBtn">➕ Добавить чек</button></div>
         <div class="card"><h3>✍️ Ручное добавление</h3><input id="manualName" placeholder="Название"><br><br><input id="manualPrice" placeholder="Цена" step="0.01"><br><br><input id="manualQuantity" placeholder="Кол-во" step="0.01" value="1"><br><br><input type="date" id="manualDate"><br><br><button id="addManualBtn">➕ Добавить товар</button></div>
     </div>
 
-    <!-- Покупки с поиском и редактированием -->
+    <!-- Список покупок с поиском и редактированием -->
     <div class="tab-pane" id="tab-list">
         <div class="card">
             <h3>📋 История покупок</h3>
-            <div class="search-bar"><input type="text" id="searchInput" placeholder="🔍 Название товара"><select id="periodSelect"><option value="all">Все время</option><option value="day">День</option><option value="week">Неделя</option><option value="month">Месяц</option></select><button id="searchBtn">Найти</button></div>
-            <div id="searchResultTotal" style="margin-bottom: 12px; font-weight: bold;"></div>
+            <div class="search-bar"><input type="text" id="searchInput" placeholder="🔍 Название"><select id="periodSelect"><option value="all">Все</option><option value="day">День</option><option value="week">Неделя</option><option value="month">Месяц</option></select><button id="searchBtn">Найти</button></div>
+            <div id="searchResultTotal" style="margin-bottom: 12px;"></div>
             <div class="table-wrapper"><table id="purchasesTable"><thead><tr><th data-sort="date">Дата</th><th>Название</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr></thead><tbody id="tableBody"></tbody></table></div>
         </div>
     </div>
 
-    <!-- Статистика, календарь, список покупок - без изменений (код тот же, но вставлю позже) -->
     <div class="tab-pane" id="tab-stats"><div class="stats-grid" id="statsGrid"></div><div class="card"><canvas id="categoryChart"></canvas></div></div>
     <div class="tab-pane" id="tab-calendar"><div class="card"><div id="calendar"></div></div></div>
     <div class="tab-pane" id="tab-shopping"><div class="card"><h3>🛒 Список покупок</h3><textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea><button id="addShoppingListBtn">📥 Добавить JSON</button><div style="display:flex; gap:6px; margin:12px 0"><input id="newItemName" placeholder="Новый товар"><button id="addItemBtn">➕</button></div><div id="shoppingListContainer"></div></div></div>
 
-    <!-- Новая вкладка: КАЛОРИИ -->
+    <!-- Калории -->
     <div class="tab-pane" id="tab-calories">
         <div class="card">
             <h3>🍎 Дневник питания</h3>
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
                 <input id="foodName" placeholder="Продукт" style="flex:2"><input id="foodCalories" placeholder="ккал" type="number" step="1" style="flex:1"><input type="date" id="foodDate" style="flex:1"><button id="addFoodBtn">➕ Добавить</button>
             </div>
-            <div class="stats-grid" style="grid-template-columns: repeat(2,1fr); margin-bottom:16px;"><div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div><div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (норма 2000)</div></div></div>
+            <div class="stats-grid" style="grid-template-columns: repeat(2,1fr);"><div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div><div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (норма 2000)</div></div></div>
             <div class="table-wrapper"><table id="caloriesTable"><thead><tr><th>Дата</th><th>Продукт</th><th>ккал</th><th></th></tr></thead><tbody id="caloriesBody"></tbody></table></div>
         </div>
     </div>
 </div>
 
 <script>
-    // === ОБЩИЕ ДАННЫЕ ===
-    let purchases = [];
-    let shoppingList = [];
-    let calories = []; // { id, date, name, calories }
-    let yandexToken = null;
+    let purchases = [], shoppingList = [], calories = [], yandexToken = null;
     let currentSort = { field: 'date', order: 'desc' };
     let currentSearch = { query: '', period: 'all' };
     const CALORIE_GOAL = 2000;
+    const CLIENT_ID = '2ae78c4d63ab42ed95c3242c63579c3b';
+    const REDIRECT_URI = window.location.href.split('#')[0];
 
     function saveLocal() {
         localStorage.setItem('budget_purchases', JSON.stringify(purchases));
@@ -200,10 +204,6 @@
         calories = JSON.parse(localStorage.getItem('calories_data') || '[]');
         renderAll();
     }
-
-    // === ЯНДЕКС ДИСК ===
-    const CLIENT_ID = '2ae78c4d63ab42ed95c3242c63579c3b';
-    const REDIRECT_URI = window.location.href.split('#')[0];
     function getYandexAuthUrl() { return `https://oauth.yandex.ru/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
     function handleAuthRedirect() {
         const hash = window.location.hash.substring(1);
@@ -212,7 +212,7 @@
             yandexToken = params.get('access_token');
             localStorage.setItem('yandex_token', yandexToken);
             window.location.hash = '';
-            alert('✅ Авторизация');
+            alert('✅ Авторизация успешна');
             loadFromDisk();
         }
     }
@@ -229,33 +229,30 @@
                 calories = json.calories || [];
                 saveLocal();
                 renderAll();
-                alert('Данные с Диска');
+                alert('Данные с Яндекс.Диска');
             } else if(res.status === 404) saveToDisk();
         } catch(e) {}
     }
     async function saveToDisk() {
-        if(!yandexToken) { alert('Войдите'); return false; }
+        if(!yandexToken) return alert('Войдите в Яндекс');
         const content = { purchases, shoppingList, calories };
         try {
             const uploadUrl = await fetch('https://cloud-api.yandex.net/v1/disk/resources/upload?path=/budget_data.json&overwrite=true', { headers: { 'Authorization': `OAuth ${yandexToken}` } }).then(r=>r.json());
             await fetch(uploadUrl.href, { method: 'PUT', body: JSON.stringify(content), headers: { 'Content-Type': 'application/json' } });
-            alert('Синхронизация OK');
-            return true;
-        } catch(e) { alert('Ошибка'); return false; }
+            alert('Сохранено');
+        } catch(e) { alert('Ошибка'); }
     }
 
-    // === КАТЕГОРИИ ===
     function guessCategory(name) {
         const n = name.toLowerCase();
         if(n.includes('молоко')||n.includes('кефир')||n.includes('творог')) return '🥛 Молочные';
         if(n.includes('хлеб')||n.includes('батон')) return '🍞 Хлеб';
         if(n.includes('яблок')||n.includes('банан')) return '🍎 Фрукты';
         if(n.includes('картош')||n.includes('огур')||n.includes('помидор')) return '🥬 Овощи';
-        if(n.includes('лапша')||n.includes('макарон')||n.includes('рис')) return '🍚 Бакалея';
+        if(n.includes('лапша')||n.includes('макарон')) return '🍚 Бакалея';
         return '📦 Прочее';
     }
 
-    // === ДОБАВЛЕНИЕ/УДАЛЕНИЕ/РЕДАКТИРОВАНИЕ ===
     function addReceipt(jsonStr) {
         try { const data = JSON.parse(jsonStr);
         const date = data.date || new Date().toISOString().slice(0,10);
@@ -269,45 +266,26 @@
     function editPurchase(id) {
         const item = purchases.find(p => p.id === id);
         if(!item) return;
-        const newName = prompt('Новое название', item.name);
+        const newName = prompt('Название', item.name);
         const newPrice = parseFloat(prompt('Цена', item.price));
-        const newQty = parseFloat(prompt('Количество', item.quantity));
+        const newQty = parseFloat(prompt('Кол-во', item.quantity));
         const newDate = prompt('Дата ГГГГ-ММ-ДД', item.date);
         if(newName && !isNaN(newPrice) && !isNaN(newQty) && newDate) {
-            item.name = newName;
-            item.price = newPrice;
-            item.quantity = newQty;
-            item.total = newPrice * newQty;
-            item.date = newDate;
-            item.category = guessCategory(newName);
+            item.name = newName; item.price = newPrice; item.quantity = newQty; item.total = newPrice * newQty; item.date = newDate; item.category = guessCategory(newName);
             saveLocal(); renderAll(); saveToDisk();
         }
     }
-
-    // === ПОИСК С СУММОЙ ===
     function filterPurchasesBySearch() {
         let filtered = [...purchases];
-        if(currentSearch.query) {
-            const q = currentSearch.query.toLowerCase();
-            filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
-        }
+        if(currentSearch.query) filtered = filtered.filter(p => p.name.toLowerCase().includes(currentSearch.query.toLowerCase()));
         const now = new Date();
-        if(currentSearch.period === 'day') {
-            const today = now.toISOString().slice(0,10);
-            filtered = filtered.filter(p => p.date === today);
-        } else if(currentSearch.period === 'week') {
-            const weekAgo = new Date(now.getTime() - 7*24*3600*1000).toISOString().slice(0,10);
-            filtered = filtered.filter(p => p.date >= weekAgo);
-        } else if(currentSearch.period === 'month') {
-            const monthAgo = new Date(now.getTime() - 30*24*3600*1000).toISOString().slice(0,10);
-            filtered = filtered.filter(p => p.date >= monthAgo);
-        }
+        if(currentSearch.period === 'day') { const today = now.toISOString().slice(0,10); filtered = filtered.filter(p => p.date === today); }
+        if(currentSearch.period === 'week') { const weekAgo = new Date(now.getTime() - 7*24*3600*1000).toISOString().slice(0,10); filtered = filtered.filter(p => p.date >= weekAgo); }
+        if(currentSearch.period === 'month') { const monthAgo = new Date(now.getTime() - 30*24*3600*1000).toISOString().slice(0,10); filtered = filtered.filter(p => p.date >= monthAgo); }
         const total = filtered.reduce((s,p)=>s+p.total,0);
-        document.getElementById('searchResultTotal').innerHTML = `🔎 Найдено товаров: ${filtered.length}, общая сумма: ${total.toFixed(2)} ₽`;
+        document.getElementById('searchResultTotal').innerHTML = `🔎 Найдено: ${filtered.length}, сумма: ${total.toFixed(2)} ₽`;
         return filtered;
     }
-
-    // === РЕНДЕР ПОКУПОК (с учётом поиска) ===
     function renderPurchases() {
         let filtered = filterPurchasesBySearch();
         const sorted = filtered.sort((a,b) => {
@@ -335,8 +313,6 @@
             }
         }
     }
-
-    // === СТАТИСТИКА ===
     function renderStats() {
         const total = purchases.reduce((s,p)=>s+p.total,0);
         const avg = purchases.length ? total/purchases.length : 0;
@@ -348,59 +324,42 @@
         if(ctx) window.myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: '₽', data: Object.values(cats), backgroundColor: '#10b981' }] } });
     }
     function renderCalendar() {
-        const byDate = {};
-        purchases.forEach(p => byDate[p.date] = (byDate[p.date]||0) + p.total);
+        const byDate = {}; purchases.forEach(p => byDate[p.date] = (byDate[p.date]||0) + p.total);
         const now = new Date(), year = now.getFullYear(), month = now.getMonth();
         const first = new Date(year, month, 1), last = new Date(year, month+1, 0);
-        let html = `<div style="text-align:center;"><strong>${first.toLocaleString('ru', { month:'long', year:'numeric' })}</strong></div><div class="calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px;">`;
+        let html = `<div style="text-align:center;"><strong>${first.toLocaleString('ru', { month:'long', year:'numeric' })}</strong></div><div class="calendar-grid">`;
         for(let i=0; i<first.getDay(); i++) html += `<div></div>`;
         for(let d=1; d<=last.getDate(); d++) {
             const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const has = byDate[ds];
-            html += `<div class="calendar-day ${has ? 'has-expense' : ''}" style="background:#f1f5f9;border-radius:16px;padding:8px;text-align:center;cursor:pointer;" data-date="${ds}">${d}${has ? `<span style="font-size:10px;">${Math.round(has)}₽</span>` : ''}</div>`;
+            html += `<div class="calendar-day has-expense" data-date="${ds}">${d}${has ? `<span style="font-size:10px;">${Math.round(has)}₽</span>` : ''}</div>`;
         }
         html += `</div>`;
         document.getElementById('calendar').innerHTML = html;
         document.querySelectorAll('.calendar-day').forEach(day => day.onclick = () => { document.querySelector('.tab-btn[data-tab="list"]').click(); renderPurchases(); });
     }
-
-    // === СПИСОК ПОКУПОК ===
     function renderShoppingList() {
         const container = document.getElementById('shoppingListContainer');
-        if(!container) return;
         if(!shoppingList.length) { container.innerHTML = '<p>✨ Пусто</p>'; return; }
         let html = '';
-        shoppingList.forEach((item, idx) => html += `<div class="shopping-item" style="display:flex;gap:12px;padding:8px;border-bottom:1px solid #ccc"><input type="checkbox" ${item.checked ? 'checked' : ''} onchange="window.toggleShopping(${idx})"><span style="flex:1;${item.checked ? 'text-decoration:line-through;opacity:0.6' : ''}">${item.name}</span><button onclick="window.removeShoppingItem(${idx})" style="background:#ef4444">🗑️</button></div>`);
+        shoppingList.forEach((item, idx) => html += `<div class="shopping-item"><input type="checkbox" ${item.checked ? 'checked' : ''} onchange="window.toggleShopping(${idx})"><span style="flex:1;${item.checked ? 'text-decoration:line-through;opacity:0.6' : ''}">${item.name}</span><button onclick="window.removeShoppingItem(${idx})" class="delete-btn">🗑️</button></div>`);
         container.innerHTML = html;
     }
     window.toggleShopping = (idx) => { shoppingList[idx].checked = !shoppingList[idx].checked; saveLocal(); renderShoppingList(); saveToDisk(); };
     window.removeShoppingItem = (idx) => { shoppingList.splice(idx,1); saveLocal(); renderShoppingList(); saveToDisk(); };
     function addShoppingItem(name) { if(name && !shoppingList.some(i=>i.name===name)) { shoppingList.push({ name, checked: false }); saveLocal(); renderShoppingList(); saveToDisk(); } }
     function addShoppingListFromJson(jsonStr) { try { const data = JSON.parse(jsonStr); if(data.list) { data.list.forEach(n => { if(!shoppingList.some(i=>i.name===n)) shoppingList.push({ name:n, checked:false }); }); saveLocal(); renderShoppingList(); saveToDisk(); return true; } } catch(e) { alert('Ошибка JSON'); return false; } }
-
-    // === КАЛОРИИ ===
-    function addFood() {
-        const name = document.getElementById('foodName').value;
-        const cal = parseInt(document.getElementById('foodCalories').value);
-        const date = document.getElementById('foodDate').value || new Date().toISOString().slice(0,10);
-        if(!name || isNaN(cal)) { alert('Введите продукт и ккал'); return; }
-        calories.push({ id: Date.now(), date, name, calories: cal });
-        saveLocal(); renderCalories(); saveToDisk();
-        document.getElementById('foodName').value = '';
-        document.getElementById('foodCalories').value = '';
-    }
+    function addFood() { const name = document.getElementById('foodName').value; const cal = parseInt(document.getElementById('foodCalories').value); const date = document.getElementById('foodDate').value || new Date().toISOString().slice(0,10); if(!name || isNaN(cal)) return alert('Введите продукт и ккал'); calories.push({ id: Date.now(), date, name, calories: cal }); saveLocal(); renderCalories(); saveToDisk(); document.getElementById('foodName').value = ''; document.getElementById('foodCalories').value = ''; }
     function deleteCalorie(id) { calories = calories.filter(c => c.id !== id); saveLocal(); renderCalories(); saveToDisk(); }
     function renderCalories() {
         const today = new Date().toISOString().slice(0,10);
         const todayCal = calories.filter(c => c.date === today).reduce((s,c)=>s+c.calories,0);
-        const left = CALORIE_GOAL - todayCal;
         document.getElementById('todayCalories').innerHTML = todayCal;
-        document.getElementById('caloriesLeft').innerHTML = left;
-        const sorted = [...calories].sort((a,b)=>b.date.localeCompare(a.date));
+        document.getElementById('caloriesLeft').innerHTML = CALORIE_GOAL - todayCal;
         const tbody = document.getElementById('caloriesBody');
         if(tbody) {
             tbody.innerHTML = '';
-            for(let c of sorted) {
+            for(let c of [...calories].sort((a,b)=>b.date.localeCompare(a.date))) {
                 let row = tbody.insertRow();
                 row.insertCell(0).innerText = c.date;
                 row.insertCell(1).innerText = c.name;
@@ -411,24 +370,15 @@
             }
         }
     }
-
     function renderAll() { renderPurchases(); renderStats(); renderCalendar(); renderShoppingList(); renderCalories(); }
 
-    // === ИНИЦИАЛИЗАЦИЯ СОБЫТИЙ ===
     document.getElementById('addJsonBtn').onclick = () => { if(addReceipt(document.getElementById('jsonInput').value)) document.getElementById('jsonInput').value=''; };
-    document.getElementById('addManualBtn').onclick = () => {
-        let name = document.getElementById('manualName').value, price = parseFloat(document.getElementById('manualPrice').value), qty = parseFloat(document.getElementById('manualQuantity').value), date = document.getElementById('manualDate').value;
-        if(name && price) { addReceipt(JSON.stringify({ date, items:[{ name, price, quantity:qty, total:price*qty }] })); document.getElementById('manualName').value=''; document.getElementById('manualPrice').value=''; } else alert('Заполните поля');
-    };
-    document.getElementById('searchBtn').onclick = () => {
-        currentSearch.query = document.getElementById('searchInput').value;
-        currentSearch.period = document.getElementById('periodSelect').value;
-        renderPurchases();
-    };
+    document.getElementById('addManualBtn').onclick = () => { let n=document.getElementById('manualName').value, p=parseFloat(document.getElementById('manualPrice').value), q=parseFloat(document.getElementById('manualQuantity').value), d=document.getElementById('manualDate').value; if(n && p) { addReceipt(JSON.stringify({ date:d, items:[{ name:n, price:p, quantity:q, total:p*q }] })); document.getElementById('manualName').value=''; document.getElementById('manualPrice').value=''; } else alert('Заполните поля'); };
+    document.getElementById('searchBtn').onclick = () => { currentSearch.query = document.getElementById('searchInput').value; currentSearch.period = document.getElementById('periodSelect').value; renderPurchases(); };
     document.getElementById('addShoppingListBtn').onclick = () => { addShoppingListFromJson(document.getElementById('shoppingJsonInput').value); document.getElementById('shoppingJsonInput').value=''; };
     document.getElementById('addItemBtn').onclick = () => { addShoppingItem(document.getElementById('newItemName').value); document.getElementById('newItemName').value=''; };
     document.getElementById('addFoodBtn').onclick = addFood;
-    document.getElementById('syncNowBtn').onclick = () => { if(yandexToken) saveToDisk(); else alert('Войдите'); };
+    document.getElementById('syncNowBtn').onclick = () => { if(yandexToken) saveToDisk(); else alert('Войдите в Яндекс'); };
     document.getElementById('loginYandexBtn').onclick = () => { window.location.href = getYandexAuthUrl(); };
     document.querySelectorAll('.tab-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active'); });
     document.querySelectorAll('#purchasesTable th').forEach(th => th.onclick = () => { let field = th.dataset.sort; if(currentSort.field === field) currentSort.order = currentSort.order === 'desc' ? 'asc' : 'desc'; else { currentSort.field = field; currentSort.order = 'desc'; } renderPurchases(); });
