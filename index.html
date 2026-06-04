@@ -148,11 +148,6 @@
             flex: 1;
             font-size: 1.1rem;
         }
-        .shopping-item .delete-btn {
-            background: #ef4444;
-            padding: 6px 16px;
-            border-radius: 30px;
-        }
         .food-form {
             display: flex;
             gap: 12px;
@@ -169,9 +164,11 @@
 <div class="container">
     <div class="header">
         <h1>🏠 Мои чеки + 🍎 Калории</h1>
-        <div><button id="themeToggle" class="btn-icon">🌙</button>
-        <button id="syncNowBtn" class="btn-icon">🔄 Синхр.</button>
-        <button id="loginYandexBtn" class="btn-icon">🔑 Войти</button></div>
+        <div>
+            <button id="themeToggle" class="btn-icon">🌙 Тема</button>
+            <button id="syncNowBtn" class="btn-icon">🔄 Синхр.</button>
+            <button id="loginYandexBtn" class="btn-icon">🔑 Войти</button>
+        </div>
     </div>
 
     <div class="tabs">
@@ -183,30 +180,79 @@
         <button class="tab-btn" data-tab="calories">🍎 Калории</button>
     </div>
 
-    <!-- Добавление чека -->
+    <!-- Вкладка: Добавить чек -->
     <div class="tab-pane active" id="tab-add">
-        <div class="card"><h3>📦 Добавить чек (JSON)</h3><textarea id="jsonInput" rows="4"></textarea><button id="addJsonBtn">➕ Добавить чек</button></div>
-        <div class="card"><h3>✍️ Ручное добавление</h3><input id="manualName" placeholder="Название"><br><br><input id="manualPrice" placeholder="Цена" step="0.01"><br><br><input id="manualQuantity" placeholder="Кол-во" step="0.01" value="1"><br><br><input type="date" id="manualDate"><br><br><button id="addManualBtn">➕ Добавить товар</button></div>
-    </div>
-
-    <!-- Список покупок с поиском и редактированием -->
-    <div class="tab-pane" id="tab-list">
         <div class="card">
-            <h3>📋 История покупок</h3>
-            <div class="search-bar"><input type="text" id="searchInput" placeholder="🔍 Название"><select id="periodSelect"><option value="all">Все</option><option value="day">День</option><option value="week">Неделя</option><option value="month">Месяц</option></select><button id="searchBtn">Найти</button></div>
-            <div id="searchResultTotal" style="margin-bottom: 12px;"></div>
-            <div class="table-wrapper"><table id="purchasesTable"><thead><tr><th data-sort="date">Дата</th><th>Название</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr></thead><tbody id="tableBody"></tbody><tr></div>
+            <h3>📦 Добавить чек (JSON)</h3>
+            <textarea id="jsonInput" rows="4" placeholder='{"store":"Пятёрочка","date":"2026-06-05","items":[{"name":"Молоко","price":79.99,"quantity":1,"total":79.99}]}'></textarea>
+            <button id="addJsonBtn" style="margin-top:12px">➕ Добавить чек</button>
+        </div>
+        <div class="card">
+            <h3>✍️ Ручное добавление</h3>
+            <input id="manualName" placeholder="Название товара"><br><br>
+            <input id="manualPrice" placeholder="Цена за единицу" step="0.01"><br><br>
+            <input id="manualQuantity" placeholder="Количество" step="0.01" value="1"><br><br>
+            <input type="date" id="manualDate"><br><br>
+            <button id="addManualBtn">➕ Добавить товар</button>
         </div>
     </div>
 
-    <div class="tab-pane" id="tab-stats"><div class="stats-grid" id="statsGrid"></div><div class="card"><canvas id="categoryChart"></canvas></div></div>
-    <div class="tab-pane" id="tab-calendar"><div class="card"><div id="calendar"></div></div></div>
-    
-    <!-- Список покупок (улучшенный) -->
+    <!-- Вкладка: Покупки -->
+    <div class="tab-pane" id="tab-list">
+        <div class="card">
+            <h3>📋 История покупок</h3>
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="🔍 Название товара" style="flex:2">
+                <select id="periodSelect">
+                    <option value="all">Все время</option>
+                    <option value="day">Сегодня</option>
+                    <option value="week">Неделя</option>
+                    <option value="month">Месяц</option>
+                </select>
+                <button id="searchBtn">Найти</button>
+            </div>
+            <div id="searchResultTotal" style="margin-bottom: 12px; font-weight: bold;"></div>
+            <div class="table-wrapper">
+                <table id="purchasesTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="date">📅 Дата</th>
+                            <th data-sort="name">🏷️ Название</th>
+                            <th data-sort="category">📂 Категория</th>
+                            <th data-sort="price">💰 Цена</th>
+                            <th data-sort="quantity">🔢 Кол-во</th>
+                            <th data-sort="total">💵 Сумма</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладка: Статистика -->
+    <div class="tab-pane" id="tab-stats">
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="card">
+            <h3>📈 Расходы по категориям</h3>
+            <canvas id="categoryChart" width="400" height="200" style="max-width:100%; height:auto;"></canvas>
+        </div>
+    </div>
+
+    <!-- Вкладка: Календарь -->
+    <div class="tab-pane" id="tab-calendar">
+        <div class="card">
+            <h3>🗓️ Календарь расходов</h3>
+            <div id="calendar"></div>
+        </div>
+    </div>
+
+    <!-- Вкладка: Список покупок -->
     <div class="tab-pane" id="tab-shopping">
         <div class="card">
             <h3>🛒 Список покупок</h3>
-            <textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea>
+            <textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб","Яблоки"]}'></textarea>
             <button id="addShoppingListBtn" style="margin: 8px 0;">📥 Добавить список (JSON)</button>
             <div style="display: flex; gap: 10px; margin: 16px 0;">
                 <input id="newItemName" placeholder="Новый товар" style="flex: 2;">
@@ -216,7 +262,7 @@
         </div>
     </div>
 
-    <!-- Калории -->
+    <!-- Вкладка: Калории -->
     <div class="tab-pane" id="tab-calories">
         <div class="card">
             <h3>🍎 Дневник питания</h3>
@@ -227,10 +273,28 @@
                 <button id="addFoodBtn">➕ Добавить</button>
             </div>
             <div class="stats-grid" style="grid-template-columns: repeat(2,1fr);">
-                <div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div>
-                <div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (норма 2000)</div></div>
+                <div class="stat-card">
+                    <div class="stat-value" id="todayCalories">0</div>
+                    <div>ккал сегодня</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="caloriesLeft">0</div>
+                    <div>Осталось (норма 2000)</div>
+                </div>
             </div>
-            <div class="table-wrapper"><table id="caloriesTable"><thead><tr><th>Дата</th><th>Продукт</th><th>ккал</th><th></th></tr></thead><tbody id="caloriesBody"></tbody></table></div>
+            <div class="table-wrapper">
+                <table id="caloriesTable">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Продукт</th>
+                            <th>ккал</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="caloriesBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -330,7 +394,8 @@
         if(currentSearch.period === 'week') { const weekAgo = new Date(now.getTime() - 7*24*3600*1000).toISOString().slice(0,10); filtered = filtered.filter(p => p.date >= weekAgo); }
         if(currentSearch.period === 'month') { const monthAgo = new Date(now.getTime() - 30*24*3600*1000).toISOString().slice(0,10); filtered = filtered.filter(p => p.date >= monthAgo); }
         const total = filtered.reduce((s,p)=>s+p.total,0);
-        document.getElementById('searchResultTotal').innerHTML = `🔎 Найдено: ${filtered.length}, сумма: ${total.toFixed(2)} ₽`;
+        const elem = document.getElementById('searchResultTotal');
+        if(elem) elem.innerHTML = `🔎 Найдено: ${filtered.length}, сумма: ${total.toFixed(2)} ₽`;
         return filtered;
     }
     function renderPurchases() {
@@ -363,7 +428,12 @@
     function renderStats() {
         const total = purchases.reduce((s,p)=>s+p.total,0);
         const avg = purchases.length ? total/purchases.length : 0;
-        document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="stat-value">${total.toFixed(0)} ₽</div><div>Всего</div></div><div class="stat-card"><div class="stat-value">${purchases.length}</div><div>Покупок</div></div><div class="stat-card"><div class="stat-value">${avg.toFixed(0)} ₽</div><div>Средний чек</div></div>`;
+        const statsGrid = document.getElementById('statsGrid');
+        if(statsGrid) statsGrid.innerHTML = `
+            <div class="stat-card"><div class="stat-value">${total.toFixed(0)} ₽</div><div>Всего</div></div>
+            <div class="stat-card"><div class="stat-value">${purchases.length}</div><div>Покупок</div></div>
+            <div class="stat-card"><div class="stat-value">${avg.toFixed(0)} ₽</div><div>Средний чек</div></div>
+        `;
         const cats = {};
         purchases.forEach(p => cats[p.category] = (cats[p.category]||0) + p.total);
         const ctx = document.getElementById('categoryChart')?.getContext('2d');
@@ -382,11 +452,13 @@
             html += `<div class="calendar-day" data-date="${ds}">${d}${has ? `<span style="font-size:10px;">${Math.round(has)}₽</span>` : ''}</div>`;
         }
         html += `</div>`;
-        document.getElementById('calendar').innerHTML = html;
+        const calendarDiv = document.getElementById('calendar');
+        if(calendarDiv) calendarDiv.innerHTML = html;
         document.querySelectorAll('.calendar-day').forEach(day => day.onclick = () => { document.querySelector('.tab-btn[data-tab="list"]').click(); renderPurchases(); });
     }
     function renderShoppingList() {
         const container = document.getElementById('shoppingListContainer');
+        if(!container) return;
         if(!shoppingList.length) { container.innerHTML = '<div style="padding: 16px; text-align: center;">✨ Список пуст. Добавьте товары!</div>'; return; }
         let html = '';
         shoppingList.forEach((item, idx) => {
@@ -398,7 +470,7 @@
         });
         container.innerHTML = html;
     }
-    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m;}); }
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m) { if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; return m;}); }
     window.toggleShopping = (idx) => { shoppingList[idx].checked = !shoppingList[idx].checked; saveLocal(); renderShoppingList(); saveToDisk(); };
     window.removeShoppingItem = (idx) => { shoppingList.splice(idx,1); saveLocal(); renderShoppingList(); saveToDisk(); };
     function addShoppingItem(name) { if(name && !shoppingList.some(i=>i.name===name)) { shoppingList.push({ name, checked: false }); saveLocal(); renderShoppingList(); saveToDisk(); } }
@@ -408,8 +480,10 @@
     function renderCalories() {
         const today = new Date().toISOString().slice(0,10);
         const todayCal = calories.filter(c => c.date === today).reduce((s,c)=>s+c.calories,0);
-        document.getElementById('todayCalories').innerHTML = todayCal;
-        document.getElementById('caloriesLeft').innerHTML = CALORIE_GOAL - todayCal;
+        const todayElem = document.getElementById('todayCalories');
+        const leftElem = document.getElementById('caloriesLeft');
+        if(todayElem) todayElem.innerHTML = todayCal;
+        if(leftElem) leftElem.innerHTML = CALORIE_GOAL - todayCal;
         const tbody = document.getElementById('caloriesBody');
         if(tbody) {
             tbody.innerHTML = '';
