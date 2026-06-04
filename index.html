@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Мои чеки — учёт расходов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #1e293b;
+            padding: 20px;
+            padding-bottom: 80px;
+            transition: background 0.2s, color 0.2s;
+        }
+        body.dark {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #10b981, #059669);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .dark h1 {
+            background: linear-gradient(135deg, #34d399, #10b981);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+        .btn-icon {
+            background: #e2e8f0;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .dark .btn-icon {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        .btn-icon:hover {
+            transform: scale(0.96);
+        }
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 8px;
+        }
+        .dark .tabs {
+            border-bottom-color: #334155;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 40px;
+            color: #475569;
+        }
+        .dark .tab-btn {
+            color: #94a3b8;
+        }
+        .tab-btn.active {
+            background: #10b981;
+            color: white;
+        }
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+            animation: fade 0.2s ease;
+        }
+        @keyframes fade {
+            from { opacity: 0; transform: translateY(6px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            transition: background 0.2s;
+        }
+        .dark .card {
+            background: #1e293b;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            font-size: 1rem;
+            background: white;
+        }
+        .dark input, .dark textarea, .dark select {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-color: #334155;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        button:hover { background: #059669; transform: scale(0.98);}
+        .btn-danger {
+            background: #ef4444;
+        }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+        /* Таблица */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .dark th, .dark td {
+            border-bottom-color: #334155;
+        }
+        th {
+            cursor: pointer;
+            user-select: none;
+        }
+        /* Календарь */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 20px;
+        }
+        .calendar-day {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+        }
+        .dark .calendar-day {
+            background: #0f172a;
+        }
+        .calendar-day.has-expense {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .dark .calendar-day.has-expense {
+            background: #450a0a;
+            color: #fecaca;
+        }
+        /* Список покупок */
+        .shopping-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .dark .shopping-item {
+            border-bottom-color: #334155;
+        }
+        .shopping-item input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 28px;
+            text-align: center;
+        }
+        .dark .stat-card {
+            background: #0f172a;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #10b981;
+        }
+        .delete-btn {
+            background: #ef4444;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🧾 Мои чеки</h1>
+        <div style="display: flex; gap: 10px;">
+            <button id="themeToggle" class="btn-icon">🌙 Тёмная</button>
+            <button id="syncNowBtn" class="btn-icon">🔄 Синхронизация</button>
+            <button id="loginYandexBtn" class="btn-icon">🔑 Войти через Яндекс</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="add">➕ Добавить чек</button>
+        <button class="tab-btn" data-tab="list">📋 Покупки</button>
+        <button class="tab-btn" data-tab="stats">📊 Статистика</button>
+        <button class="tab-btn" data-tab="calendar">📅 Календарь</button>
+        <button class="tab-btn" data-tab="shopping">🛒 Список покупок</button>
+    </div>
+
+    <div class="tab-pane active" id="tab-add">
+        <div class="card"><h3>➕ Добавить чек (JSON)</h3>
+            <textarea id="jsonInput" rows="5" placeholder='{"store":"Пятёрочка","date":"2026-06-05","items":[{"name":"Молоко","price":79.99,"quantity":1,"total":79.99}]}'></textarea>
+            <button id="addJsonBtn" style="margin-top:12px">✅ Добавить чек</button>
+        </div>
+        <div class="card"><h3>✍️ Ручное добавление</h3>
+            <input type="text" id="manualName" placeholder="Название"><br><br>
+            <input type="number" id="manualPrice" placeholder="Цена" step="0.01"><br><br>
+            <input type="number" id="manualQuantity" placeholder="Кол-во" step="0.01" value="1"><br><br>
+            <input type="date" id="manualDate"><br><br>
+            <button id="addManualBtn">➕ Добавить товар</button>
+        </div>
+    </div>
+
+    <div class="tab-pane" id="tab-list">
+        <div class="card">
+            <h3>📋 История покупок</h3>
+            <div class="table-wrapper"><table id="purchasesTable"><thead><tr><th data-sort="date">Дата</th><th>Название</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr></thead><tbody id="tableBody"></tbody></table></div>
+        </div>
+    </div>
+
+    <div class="tab-pane" id="tab-stats">
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="card"><canvas id="categoryChart" width="400" height="200" style="max-width:100%"></canvas></div>
+    </div>
+
+    <div class="tab-pane" id="tab-calendar">
+        <div class="card"><div id="calendar"></div></div>
+    </div>
+
+    <div class="tab-pane" id="tab-shopping">
+        <div class="card">
+            <h3>🛒 Список покупок</h3>
+            <textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea>
+            <button id="addShoppingListBtn" style="margin:8px 0">📥 Добавить список JSON</button>
+            <div style="display:flex; gap:6px;"><input type="text" id="newItemName" placeholder="Новый товар" style="flex:1"><button id="addItemBtn">➕</button></div>
+            <div id="shoppingListContainer" style="margin-top:16px"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === ДАННЫЕ ===
+    let purchases = [];
+    let shoppingList = [];
+    let yandexToken = null;
+    let currentSort = { field: 'date', order: 'desc' };
+
+    function saveLocal() {
+        localStorage.setItem('budget_purchases', JSON.stringify(purchases));
+        localStorage.setItem('shopping_list', JSON.stringify(shoppingList));
+    }
+
+    function loadLocal() {
+        const p = localStorage.getItem('budget_purchases');
+        if(p) purchases = JSON.parse(p);
+        const s = localStorage.getItem('shopping_list');
+        if(s) shoppingList = JSON.parse(s);
+        else shoppingList = [];
+        renderAll();
+    }
+
+    // === ЯНДЕКС ДИСК (авторизация и работа с файлом) ===
+    const CLIENT_ID = '2ae78c4d63ab42ed95c3242c63579c3b';
+    const REDIRECT_URI = window.location.href.split('#')[0]; // текущий адрес
+
+    function getYandexAuthUrl() {
+        return `https://oauth.yandex.ru/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    }
+
+    function handleAuthRedirect() {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        if(params.has('access_token')) {
+            yandexToken = params.get('access_token');
+            localStorage.setItem('yandex_token', yandexToken);
+            window.location.hash = '';
+            alert('✅ Авторизация успешна!');
+            loadFromDisk();
+        }
+    }
+
+    async function loadFromDisk() {
+        if(!yandexToken) return;
+        try {
+            const res = await fetch('https://cloud-api.yandex.net/v1/disk/resources/download?path=/budget_data.json', {
+                headers: { 'Authorization': `OAuth ${yandexToken}` }
+            });
+            if(res.status === 200) {
+                const data = await res.json();
+                const fileRes = await fetch(data.href);
+                const json = await fileRes.json();
+                purchases = json.purchases || [];
+                shoppingList = json.shoppingList || [];
+                saveLocal();
+                renderAll();
+                alert('Данные загружены с Яндекс.Диска');
+            } else if(res.status === 404) {
+                await saveToDisk(); // создать файл
+            }
+        } catch(e) { console.warn(e); }
+    }
+
+    async function saveToDisk() {
+        if(!yandexToken) { alert('Сначала авторизуйтесь'); return false; }
+        const content = { purchases, shoppingList };
+        try {
+            const uploadUrl = await fetch('https://cloud-api.yandex.net/v1/disk/resources/upload?path=/budget_data.json&overwrite=true', {
+                method: 'GET',
+                headers: { 'Authorization': `OAuth ${yandexToken}` }
+            }).then(r=>r.json());
+            await fetch(uploadUrl.href, { method: 'PUT', body: JSON.stringify(content), headers: { 'Content-Type': 'application/json' } });
+            alert('✅ Данные сохранены на Яндекс.Диск');
+            return true;
+        } catch(e) { alert('Ошибка сохранения: '+e.message); return false; }
+    }
+
+    // === КАТЕГОРИИ ===
+    function guessCategory(name) {
+        const n = name.toLowerCase();
+        if(n.includes('молоко')||n.includes('кефир')||n.includes('творог')) return '🥛 Молочные';
+        if(n.includes('хлеб')||n.includes('батон')) return '🍞 Хлеб';
+        if(n.includes('яблок')||n.includes('банан')) return '🍎 Фрукты';
+        if(n.includes('картош')||n.includes('огур')||n.includes('помидор')) return '🥬 Овощи';
+        if(n.includes('лапша')||n.includes('макарон')||n.includes('рис')) return '🍚 Бакалея';
+        return '📦 Прочее';
+    }
+
+    // === ДОБАВЛЕНИЕ/УДАЛЕНИЕ ===
+    function addReceipt(jsonStr) {
+        try {
+            const data = JSON.parse(jsonStr);
+            const date = data.date || new Date().toISOString().slice(0,10);
+            if(data.items && Array.isArray(data.items)) {
+                for(let item of data.items) {
+                    purchases.push({ id: Date.now()+Math.random(), date, name: item.name, price: item.price, quantity: item.quantity, total: item.total || (item.price*item.quantity), category: guessCategory(item.name) });
+                }
+                saveLocal();
+                renderAll();
+                saveToDisk();
+                return true;
+            } else { alert('Неверный JSON: items должен быть массивом'); return false; }
+        } catch(e) { alert('Ошибка JSON: '+e.message); return false; }
+    }
+
+    function deletePurchase(id) {
+        purchases = purchases.filter(p => p.id !== id);
+        saveLocal();
+        renderAll();
+        saveToDisk();
+    }
+
+    // остальные функции (рендеры, статистика, календарь, список покупок)
+    function renderAll() {
+        renderPurchases();
+        renderStats();
+        renderCalendar();
+        renderShoppingList();
+    }
+
+    function renderPurchases() {
+        const sorted = [...purchases].sort((a,b) => {
+            if(currentSort.field === 'date') return currentSort.order === 'desc' ? new Date(b.date) - new Date(a.date) : new Date(a.date) - new Date(b.date);
+            if(currentSort.field === 'name') return currentSort.order === 'desc' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+            if(currentSort.field === 'price') return currentSort.order === 'desc' ? b.price - a.price : a.price - b.price;
+            if(currentSort.field === 'total') return currentSort.order === 'desc' ? b.total - a.total : a.total - b.total;
+            return 0;
+        });
+        const tbody = document.getElementById('tableBody');
+        if(tbody) {
+            tbody.innerHTML = '';
+            for(let p of sorted) {
+                let row = tbody.insertRow();
+                row.insertCell(0).innerText = p.date;
+                row.insertCell(1).innerText = p.name;
+                row.insertCell(2).innerText = p.category;
+                row.insertCell(3).innerText = p.price.toFixed(2);
+                row.insertCell(4).innerText = p.quantity;
+                row.insertCell(5).innerText = p.total.toFixed(2);
+                let td = row.insertCell(6);
+                let btn = document.createElement('button');
+                btn.innerText = '🗑️';
+                btn.className = 'delete-btn';
+                btn.onclick = () => deletePurchase(p.id);
+                td.appendChild(btn);
+            }
+        }
+    }
+
+    function renderStats() {
+        const total = purchases.reduce((s,p)=>s+p.total,0);
+        const avg = purchases.length ? total/purchases.length : 0;
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-card"><div class="stat-value">${total.toFixed(0)} ₽</div><div>Всего</div></div>
+            <div class="stat-card"><div class="stat-value">${purchases.length}</div><div>Покупок</div></div>
+            <div class="stat-card"><div class="stat-value">${avg.toFixed(0)} ₽</div><div>Средний чек</div></div>
+        `;
+        const cats = {};
+        purchases.forEach(p => cats[p.category] = (cats[p.category]||0) + p.total);
+        const ctx = document.getElementById('categoryChart')?.getContext('2d');
+        if(window.myChart) window.myChart.destroy();
+        if(ctx) window.myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: '₽', data: Object.values(cats), backgroundColor: '#10b981' }] } });
+    }
+
+    function renderCalendar() {
+        const byDate = {};
+        purchases.forEach(p => byDate[p.date] = (byDate[p.date]||0) + p.total);
+        const now = new Date(), year = now.getFullYear(), month = now.getMonth();
+        const first = new Date(year, month, 1), last = new Date(year, month+1, 0);
+        let html = `<div style="text-align:center; margin-bottom:12px;"><strong>${first.toLocaleString('ru', { month:'long', year:'numeric' })}</strong></div><div class="calendar-grid">`;
+        for(let i=0; i<first.getDay(); i++) html += `<div></div>`;
+        for(let d=1; d<=last.getDate(); d++) {
+            const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const has = byDate[ds];
+            html += `<div class="calendar-day ${has ? 'has-expense' : ''}" data-date="${ds}">${d}${has ? `<span style="font-size:10px;">${Math.round(has)}₽</span>` : ''}</div>`;
+        }
+        html += `</div>`;
+        document.getElementById('calendar').innerHTML = html;
+        document.querySelectorAll('.calendar-day').forEach(day => day.onclick = () => { document.querySelector('.tab-btn[data-tab="list"]').click(); renderPurchases(); });
+    }
+
+    function renderShoppingList() {
+        const container = document.getElementById('shoppingListContainer');
+        if(!container) return;
+        if(!shoppingList.length) { container.innerHTML = '<p>✨ Список пуст. Добавьте товары!</p>'; return; }
+        let html = '';
+        shoppingList.forEach((item, idx) => {
+            html += `<div class="shopping-item"><input type="checkbox" ${item.checked ? 'checked' : ''} onchange="window.toggleShopping(${idx})"><span class="item-name" style="${item.checked ? 'text-decoration:line-through;opacity:0.6' : ''}">${item.name}</span><button onclick="window.removeShoppingItem(${idx})" style="background:#ef4444;padding:4px 12px;">🗑️</button></div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    window.toggleShopping = (idx) => { shoppingList[idx].checked = !shoppingList[idx].checked; saveLocal(); renderShoppingList(); saveToDisk(); };
+    window.removeShoppingItem = (idx) => { shoppingList.splice(idx,1); saveLocal(); renderShoppingList(); saveToDisk(); };
+    function addShoppingItem(name) { if(name && !shoppingList.some(i=>i.name===name)) { shoppingList.push({ name, checked: false }); saveLocal(); renderShoppingList(); saveToDisk(); } }
+    function addShoppingListFromJson(jsonStr) { try { const data = JSON.parse(jsonStr); if(data.list) { data.list.forEach(n => { if(!shoppingList.some(i=>i.name===n)) shoppingList.push({ name:n, checked:false }); }); saveLocal(); renderShoppingList(); saveToDisk(); return true; } } catch(e) { alert('Ошибка JSON'); return false; } }
+
+    // === ИНИЦИАЛИЗАЦИЯ ===
+    document.getElementById('addJsonBtn').onclick = () => { if(addReceipt(document.getElementById('jsonInput').value)) document.getElementById('jsonInput').value=''; };
+    document.getElementById('addManualBtn').onclick = () => { let name = document.getElementById('manualName').value, price = parseFloat(document.getElementById('manualPrice').value), qty = parseFloat(document.getElementById('manualQuantity').value), date = document.getElementById('manualDate').value; if(name && price) { addReceipt(JSON.stringify({ date, items:[{ name, price, quantity:qty, total:price*qty }] })); document.getElementById('manualName').value=''; document.getElementById('manualPrice').value=''; } else alert('Заполните название и цену'); };
+    document.getElementById('addShoppingListBtn').onclick = () => { addShoppingListFromJson(document.getElementById('shoppingJsonInput').value); document.getElementById('shoppingJsonInput').value=''; };
+    document.getElementById('addItemBtn').onclick = () => { addShoppingItem(document.getElementById('newItemName').value); document.getElementById('newItemName').value=''; };
+    document.getElementById('syncNowBtn').onclick = () => { if(yandexToken) saveToDisk(); else alert('Авторизуйтесь через Яндекс'); };
+    document.getElementById('loginYandexBtn').onclick = () => { window.location.href = getYandexAuthUrl(); };
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active'); });
+    document.querySelectorAll('#purchasesTable th').forEach(th => th.onclick = () => { let field = th.dataset.sort; if(currentSort.field === field) currentSort.order = currentSort.order === 'desc' ? 'asc' : 'desc'; else { currentSort.field = field; currentSort.order = 'desc'; } renderPurchases(); });
+    if(localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark');
+    document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('darkMode', document.body.classList.contains('dark') ? 'enabled' : 'disabled'); };
+    const token = localStorage.getItem('yandex_token');
+    if(token) yandexToken = token;
+    handleAuthRedirect();
+    loadLocal();
+    if(yandexToken) loadFromDisk();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</body>
+</html>
