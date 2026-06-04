@@ -13,9 +13,8 @@
         .container { max-width: 1200px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
         h1 { font-size: 1.8rem; background: linear-gradient(135deg, #10b981, #059669); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        .btn-icon { background: #e2e8f0; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
+        .btn-icon { background: #e2e8f0; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; margin-left: 8px; }
         .dark .btn-icon { background: #1e293b; color: #e2e8f0; }
-        .status { font-size: 0.8rem; background: #e2e8f0; padding: 4px 12px; border-radius: 40px; }
         .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
         .tab-btn { background: none; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; }
         .tab-btn.active { background: #10b981; color: white; }
@@ -39,19 +38,19 @@
         .shopping-item .item-name { flex: 1; }
         .food-form { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
         .food-form input { flex: 1; margin-bottom: 0; }
-        .debug { font-size: 11px; color: #888; margin-top: 8px; word-break: break-all; }
+        .file-buttons { display: flex; gap: 12px; justify-content: flex-end; margin-bottom: 16px; }
+        .file-buttons button { background: #3b82f6; padding: 8px 16px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>🏠 Мои чеки + 🍎 Калории</h1>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <span class="status" id="authStatus">⚪ Проверка...</span>
-            <button id="logoutBtn" class="btn-icon" style="display: none;">🚪 Выйти</button>
+        <div>
+            <button id="exportBtn" class="btn-icon">💾 Экспорт</button>
+            <label for="importFileInput" class="btn-icon" style="cursor: pointer;">📂 Импорт</label>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
             <button id="themeToggle" class="btn-icon">🌙</button>
-            <button id="syncBtn" class="btn-icon">🔄 Синхр.</button>
-            <button id="loginBtn" class="btn-icon">🔑 Войти</button>
         </div>
     </div>
 
@@ -75,28 +74,10 @@
     <div class="tab-pane" id="tab-shopping"><div class="card"><h3>Список покупок</h3><textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea><button id="addShoppingListBtn" style="margin:8px 0;">📥 Добавить из JSON</button><div style="display:flex; gap:10px;"><input id="newItemName" placeholder="Новый товар" style="flex:2"><button id="addItemBtn">➕ Добавить</button></div><div id="shoppingListContainer" style="margin-top:16px;"></div></div></div>
 
     <div class="tab-pane" id="tab-calories"><div class="card"><h3>Дневник питания</h3><div class="food-form"><input id="foodName" placeholder="Продукт"><input id="foodCalories" placeholder="ккал" type="number"><input type="date" id="foodDate"><button id="addFoodBtn">➕ Добавить</button></div><div class="stats-grid" style="grid-template-columns:repeat(2,1fr);"><div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div><div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (2000)</div></div></div><table id="caloriesTable"><thead><tr><th>Дата</th><th>Продукт</th><th>ккал</th><th></th></tr></thead><tbody id="caloriesBody"></tbody></table></div></div>
-    <div id="debugInfo" class="debug"></div>
 </div>
 
 <script>
-    let purchases = [], shoppingList = [], calories = [], token = null;
-    const CLIENT_ID = '2ae78c4d63ab42ed95c3242c63579c3b';
-    const REDIRECT_URI = window.location.href.split('#')[0];
-    const FILE_PATH = 'app:/budget_data.json';
-
-    function updateUI() {
-        const statusSpan = document.getElementById('authStatus');
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (token) {
-            statusSpan.innerHTML = '✅ Вошли в Яндекс';
-            logoutBtn.style.display = 'inline-block';
-        } else {
-            statusSpan.innerHTML = '❌ Не авторизованы';
-            logoutBtn.style.display = 'none';
-        }
-    }
-
-    function logout() { localStorage.removeItem('yandex_token'); token = null; updateUI(); alert('Вы вышли'); }
+    let purchases = [], shoppingList = [], calories = [];
 
     function saveLocal() {
         localStorage.setItem('purchases', JSON.stringify(purchases));
@@ -111,62 +92,33 @@
         renderAll();
     }
 
-    function getAuthUrl() { return `https://oauth.yandex.ru/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
-
-    function checkAuth() {
-        const hash = window.location.hash.substring(1);
-        const params = new URLSearchParams(hash);
-        if (params.has('access_token')) {
-            token = params.get('access_token');
-            localStorage.setItem('yandex_token', token);
-            window.location.hash = '';
-            updateUI();
-            loadFromDisk();
-            return true;
-        }
-        token = localStorage.getItem('yandex_token');
-        updateUI();
-        if (token) loadFromDisk();
-        return !!token;
+    // Экспорт
+    function exportData() {
+        const data = { purchases, shoppingList, calories };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `budget_${new Date().toISOString().slice(0,19)}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        alert('✅ Данные сохранены в файл');
     }
 
-    async function loadFromDisk() {
-        if (!token) return;
-        try {
-            const res = await fetch(`https://cloud-api.yandex.net/v1/disk/resources/download?path=${FILE_PATH}`, {
-                headers: { 'Authorization': `OAuth ${token}` }
-            });
-            if (res.status === 200) {
-                const data = await res.json();
-                const fileRes = await fetch(data.href);
-                const json = await fileRes.json();
-                purchases = json.purchases || [];
-                shoppingList = json.shoppingList || [];
-                calories = json.calories || [];
+    // Импорт
+    function importData(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.purchases) purchases = data.purchases;
+                if (data.shoppingList) shoppingList = data.shoppingList;
+                if (data.calories) calories = data.calories;
                 saveLocal();
                 renderAll();
-                document.getElementById('debugInfo').innerHTML = '✅ Загружено с Диска';
-            } else if (res.status === 404) {
-                await saveToDisk();
-                document.getElementById('debugInfo').innerHTML = '📄 Файл создан на Диске';
-            } else {
-                document.getElementById('debugInfo').innerHTML = `⚠️ Ошибка загрузки: ${res.status}`;
-            }
-        } catch(e) { document.getElementById('debugInfo').innerHTML = `❌ ${e.message}`; }
-    }
-
-    async function saveToDisk() {
-        if (!token) return false;
-        const content = { purchases, shoppingList, calories };
-        try {
-            const uploadUrl = await fetch(`https://cloud-api.yandex.net/v1/disk/resources/upload?path=${FILE_PATH}&overwrite=true`, {
-                method: 'GET',
-                headers: { 'Authorization': `OAuth ${token}` }
-            }).then(r => r.json());
-            await fetch(uploadUrl.href, { method: 'PUT', body: JSON.stringify(content), headers: { 'Content-Type': 'application/json' } });
-            document.getElementById('debugInfo').innerHTML = '💾 Сохранено на Диск';
-            return true;
-        } catch(e) { document.getElementById('debugInfo').innerHTML = `❌ Ошибка сохранения: ${e.message}`; return false; }
+                alert('✅ Данные импортированы');
+            } catch(err) { alert('Ошибка файла: ' + err.message); }
+        };
+        reader.readAsText(file);
     }
 
     function guessCategory(name) {
@@ -184,14 +136,14 @@
             const date = data.date || new Date().toISOString().slice(0,10);
             if (data.items && Array.isArray(data.items)) {
                 data.items.forEach(item => purchases.push({ id: Date.now()+Math.random(), date, name: item.name, price: item.price, quantity: item.quantity, total: item.total||(item.price*item.quantity), category: guessCategory(item.name) }));
-                saveLocal(); renderAll(); saveToDisk();
+                saveLocal(); renderAll();
                 return true;
             }
             return false;
         } catch(e) { alert('Ошибка JSON'); return false; }
     }
 
-    function deletePurchase(id) { purchases = purchases.filter(p => p.id !== id); saveLocal(); renderAll(); saveToDisk(); }
+    function deletePurchase(id) { purchases = purchases.filter(p => p.id !== id); saveLocal(); renderAll(); }
     function editPurchase(id) {
         const item = purchases.find(p => p.id === id);
         if (!item) return;
@@ -201,7 +153,7 @@
         const newDate = prompt('Дата ГГГГ-ММ-ДД', item.date);
         if (newName && !isNaN(newPrice) && !isNaN(newQty) && newDate) {
             item.name = newName; item.price = newPrice; item.quantity = newQty; item.total = newPrice*newQty; item.date = newDate; item.category = guessCategory(newName);
-            saveLocal(); renderAll(); saveToDisk();
+            saveLocal(); renderAll();
         }
     }
 
@@ -236,8 +188,8 @@
         purchases.forEach(p => cats[p.category] = (cats[p.category]||0)+p.total);
         const ctx = document.getElementById('categoryChart')?.getContext('2d');
         if (window.myChart) window.myChart.destroy();
-        if (ctx && Object.keys(cats).length) {
-            if (window.Chart) window.myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: '₽', data: Object.values(cats), backgroundColor: '#10b981' }] } });
+        if (ctx && Object.keys(cats).length && window.Chart) {
+            window.myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: '₽', data: Object.values(cats), backgroundColor: '#10b981' }] } });
         }
     }
 
@@ -248,12 +200,12 @@
         shoppingList.forEach((item, idx) => html += `<div class="shopping-item"><input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShopping(${idx})"><span class="item-name" style="${item.checked ? 'text-decoration:line-through;opacity:0.6' : ''}">${escapeHtml(item.name)}</span><button class="delete-btn" onclick="removeShoppingItem(${idx})">Удалить</button></div>`);
         container.innerHTML = html;
     }
-    function toggleShopping(idx) { shoppingList[idx].checked = !shoppingList[idx].checked; saveLocal(); renderShoppingList(); saveToDisk(); }
-    function removeShoppingItem(idx) { shoppingList.splice(idx,1); saveLocal(); renderShoppingList(); saveToDisk(); }
-    function addShoppingItem(name) { if (name && !shoppingList.some(i=>i.name===name)) { shoppingList.push({ name, checked:false }); saveLocal(); renderShoppingList(); saveToDisk(); } }
-    function addShoppingListFromJson(jsonStr) { try { const data = JSON.parse(jsonStr); if (data.list) { data.list.forEach(n => { if (n && !shoppingList.some(i=>i.name===n)) shoppingList.push({ name:n, checked:false }); }); saveLocal(); renderShoppingList(); saveToDisk(); return true; } } catch(e) { alert('Ошибка JSON'); return false; } }
-    function addFood() { const name = document.getElementById('foodName').value; const cal = parseInt(document.getElementById('foodCalories').value); const date = document.getElementById('foodDate').value || new Date().toISOString().slice(0,10); if (!name || isNaN(cal)) return alert('Введите продукт и ккал'); calories.push({ id: Date.now(), date, name, calories: cal }); saveLocal(); renderCalories(); saveToDisk(); document.getElementById('foodName').value = ''; document.getElementById('foodCalories').value = ''; }
-    function deleteCalorie(id) { calories = calories.filter(c => c.id !== id); saveLocal(); renderCalories(); saveToDisk(); }
+    function toggleShopping(idx) { shoppingList[idx].checked = !shoppingList[idx].checked; saveLocal(); renderShoppingList(); }
+    function removeShoppingItem(idx) { shoppingList.splice(idx,1); saveLocal(); renderShoppingList(); }
+    function addShoppingItem(name) { if (name && !shoppingList.some(i=>i.name===name)) { shoppingList.push({ name, checked:false }); saveLocal(); renderShoppingList(); } }
+    function addShoppingListFromJson(jsonStr) { try { const data = JSON.parse(jsonStr); if (data.list) { data.list.forEach(n => { if (n && !shoppingList.some(i=>i.name===n)) shoppingList.push({ name:n, checked:false }); }); saveLocal(); renderShoppingList(); return true; } } catch(e) { alert('Ошибка JSON'); return false; } }
+    function addFood() { const name = document.getElementById('foodName').value; const cal = parseInt(document.getElementById('foodCalories').value); const date = document.getElementById('foodDate').value || new Date().toISOString().slice(0,10); if (!name || isNaN(cal)) return alert('Введите продукт и ккал'); calories.push({ id: Date.now(), date, name, calories: cal }); saveLocal(); renderCalories(); document.getElementById('foodName').value = ''; document.getElementById('foodCalories').value = ''; }
+    function deleteCalorie(id) { calories = calories.filter(c => c.id !== id); saveLocal(); renderCalories(); }
     function renderCalories() {
         const today = new Date().toISOString().slice(0,10);
         const todayCal = calories.filter(c=>c.date===today).reduce((s,c)=>s+c.calories,0);
@@ -281,14 +233,12 @@
     document.getElementById('addShoppingListBtn').onclick = () => { addShoppingListFromJson(document.getElementById('shoppingJsonInput').value); document.getElementById('shoppingJsonInput').value=''; };
     document.getElementById('addItemBtn').onclick = () => { addShoppingItem(document.getElementById('newItemName').value); document.getElementById('newItemName').value=''; };
     document.getElementById('addFoodBtn').onclick = addFood;
-    document.getElementById('syncBtn').onclick = async () => { if (token) { await saveToDisk(); alert('Синхронизация завершена'); } else alert('Сначала войдите'); };
-    document.getElementById('loginBtn').onclick = () => { window.location.href = getAuthUrl(); };
-    document.getElementById('logoutBtn').onclick = () => { logout(); };
+    document.getElementById('exportBtn').onclick = exportData;
+    document.getElementById('importFileInput').onchange = (e) => { if(e.target.files.length) importData(e.target.files[0]); e.target.value = ''; };
     document.querySelectorAll('.tab-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active'); });
     if (localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark');
     document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('darkMode', document.body.classList.contains('dark') ? 'enabled' : 'disabled'); };
     window.toggleShopping = toggleShopping; window.removeShoppingItem = removeShoppingItem; window.deleteCalorie = deleteCalorie;
-    checkAuth();
     loadLocal();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
