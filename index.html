@@ -16,7 +16,6 @@
         .btn-icon { background: #e2e8f0; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
         .dark .btn-icon { background: #1e293b; color: #e2e8f0; }
         .status { font-size: 0.8rem; background: #e2e8f0; padding: 4px 12px; border-radius: 40px; }
-        .dark .status { background: #1e293b; }
         .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
         .tab-btn { background: none; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; }
         .tab-btn.active { background: #10b981; color: white; }
@@ -64,22 +63,17 @@
         <button class="tab-btn" data-tab="calories">🍎 Калории</button>
     </div>
 
-    <!-- Добавить чек -->
     <div class="tab-pane active" id="tab-add">
         <div class="card"><h3>Добавить чек (JSON)</h3><textarea id="jsonInput" rows="3" placeholder='{"date":"2026-06-05","items":[{"name":"Молоко","price":79.99,"quantity":1,"total":79.99}]}'></textarea><button id="addJsonBtn">➕ Добавить чек</button></div>
         <div class="card"><h3>Ручное добавление</h3><input id="manualName" placeholder="Название"><input id="manualPrice" placeholder="Цена" step="0.01"><input id="manualQuantity" placeholder="Кол-во" step="0.01" value="1"><input type="date" id="manualDate"><button id="addManualBtn">➕ Добавить товар</button></div>
     </div>
 
-    <!-- Покупки -->
     <div class="tab-pane" id="tab-list"><div class="card"><h3>История покупок</h3><input type="text" id="searchInput" placeholder="🔍 Поиск"><div id="searchTotal" style="margin:10px 0;"></div><table id="purchasesTable"><thead><tr><th>Дата</th><th>Название</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
 
-    <!-- Статистика -->
     <div class="tab-pane" id="tab-stats"><div class="stats-grid" id="statsGrid"></div><div class="card"><canvas id="categoryChart"></canvas></div></div>
 
-    <!-- Список покупок -->
     <div class="tab-pane" id="tab-shopping"><div class="card"><h3>Список покупок</h3><textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea><button id="addShoppingListBtn" style="margin:8px 0;">📥 Добавить из JSON</button><div style="display:flex; gap:10px;"><input id="newItemName" placeholder="Новый товар" style="flex:2"><button id="addItemBtn">➕ Добавить</button></div><div id="shoppingListContainer" style="margin-top:16px;"></div></div></div>
 
-    <!-- Калории -->
     <div class="tab-pane" id="tab-calories"><div class="card"><h3>Дневник питания</h3><div class="food-form"><input id="foodName" placeholder="Продукт"><input id="foodCalories" placeholder="ккал" type="number"><input type="date" id="foodDate"><button id="addFoodBtn">➕ Добавить</button></div><div class="stats-grid" style="grid-template-columns:repeat(2,1fr);"><div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div><div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (2000)</div></div></div><table id="caloriesTable"><thead><tr><th>Дата</th><th>Продукт</th><th>ккал</th><th></th></tr></thead><tbody id="caloriesBody"></tbody></table></div></div>
     <div id="debugInfo" class="debug"></div>
 </div>
@@ -88,7 +82,7 @@
     let purchases = [], shoppingList = [], calories = [], token = null;
     const CLIENT_ID = '2ae78c4d63ab42ed95c3242c63579c3b';
     const REDIRECT_URI = window.location.href.split('#')[0];
-    const FILE_PATH = '/budget_data.json';
+    const FILE_PATH = 'app:/budget_data.json';
 
     function updateUI() {
         const statusSpan = document.getElementById('authStatus');
@@ -102,12 +96,7 @@
         }
     }
 
-    function logout() {
-        localStorage.removeItem('yandex_token');
-        token = null;
-        updateUI();
-        alert('Вы вышли из аккаунта. Данные остались на устройстве.');
-    }
+    function logout() { localStorage.removeItem('yandex_token'); token = null; updateUI(); alert('Вы вышли'); }
 
     function saveLocal() {
         localStorage.setItem('purchases', JSON.stringify(purchases));
@@ -163,7 +152,7 @@
             } else {
                 document.getElementById('debugInfo').innerHTML = `⚠️ Ошибка загрузки: ${res.status}`;
             }
-        } catch(e) { document.getElementById('debugInfo').innerHTML = `❌ Ошибка: ${e.message}`; }
+        } catch(e) { document.getElementById('debugInfo').innerHTML = `❌ ${e.message}`; }
     }
 
     async function saveToDisk() {
@@ -247,7 +236,9 @@
         purchases.forEach(p => cats[p.category] = (cats[p.category]||0)+p.total);
         const ctx = document.getElementById('categoryChart')?.getContext('2d');
         if (window.myChart) window.myChart.destroy();
-        if (ctx && Object.keys(cats).length) window.myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: '₽', data: Object.values(cats), backgroundColor: '#10b981' }] } });
+        if (ctx && Object.keys(cats).length) {
+            if (window.Chart) window.myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: '₽', data: Object.values(cats), backgroundColor: '#10b981' }] } });
+        }
     }
 
     function renderShoppingList() {
