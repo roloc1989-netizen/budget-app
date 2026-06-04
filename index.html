@@ -15,6 +15,8 @@
         h1 { font-size: 1.8rem; background: linear-gradient(135deg, #10b981, #059669); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .btn-icon { background: #e2e8f0; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
         .dark .btn-icon { background: #1e293b; color: #e2e8f0; }
+        .status { font-size: 0.8rem; background: #e2e8f0; padding: 4px 12px; border-radius: 40px; }
+        .dark .status { background: #1e293b; }
         .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
         .tab-btn { background: none; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; }
         .tab-btn.active { background: #10b981; color: white; }
@@ -38,14 +40,17 @@
         .shopping-item .item-name { flex: 1; }
         .food-form { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
         .food-form input { flex: 1; margin-bottom: 0; }
+        .debug { font-size: 11px; color: #888; margin-top: 8px; word-break: break-all; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>🏠 Мои чеки + 🍎 Калории</h1>
-        <div>
-            <button id="themeToggle" class="btn-icon">🌙 Тема</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span class="status" id="authStatus">⚪ Проверка...</span>
+            <button id="logoutBtn" class="btn-icon" style="display: none;">🚪 Выйти</button>
+            <button id="themeToggle" class="btn-icon">🌙</button>
             <button id="syncBtn" class="btn-icon">🔄 Синхр.</button>
             <button id="loginBtn" class="btn-icon">🔑 Войти</button>
         </div>
@@ -61,81 +66,49 @@
 
     <!-- Добавить чек -->
     <div class="tab-pane active" id="tab-add">
-        <div class="card">
-            <h3>Добавить чек (JSON)</h3>
-            <textarea id="jsonInput" rows="3" placeholder='{"date":"2026-06-05","items":[{"name":"Молоко","price":79.99,"quantity":1,"total":79.99}]}'></textarea>
-            <button id="addJsonBtn">➕ Добавить чек</button>
-        </div>
-        <div class="card">
-            <h3>Ручное добавление</h3>
-            <input id="manualName" placeholder="Название">
-            <input id="manualPrice" placeholder="Цена" step="0.01">
-            <input id="manualQuantity" placeholder="Кол-во" step="0.01" value="1">
-            <input type="date" id="manualDate">
-            <button id="addManualBtn">➕ Добавить товар</button>
-        </div>
+        <div class="card"><h3>Добавить чек (JSON)</h3><textarea id="jsonInput" rows="3" placeholder='{"date":"2026-06-05","items":[{"name":"Молоко","price":79.99,"quantity":1,"total":79.99}]}'></textarea><button id="addJsonBtn">➕ Добавить чек</button></div>
+        <div class="card"><h3>Ручное добавление</h3><input id="manualName" placeholder="Название"><input id="manualPrice" placeholder="Цена" step="0.01"><input id="manualQuantity" placeholder="Кол-во" step="0.01" value="1"><input type="date" id="manualDate"><button id="addManualBtn">➕ Добавить товар</button></div>
     </div>
 
     <!-- Покупки -->
-    <div class="tab-pane" id="tab-list">
-        <div class="card">
-            <h3>История покупок</h3>
-            <input type="text" id="searchInput" placeholder="🔍 Поиск по названию">
-            <div id="searchTotal" style="margin: 10px 0;"></div>
-            <table id="purchasesTable">
-                <thead><tr><th>Дата</th><th>Название</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
-    </div>
+    <div class="tab-pane" id="tab-list"><div class="card"><h3>История покупок</h3><input type="text" id="searchInput" placeholder="🔍 Поиск"><div id="searchTotal" style="margin:10px 0;"></div><table id="purchasesTable"><thead><tr><th>Дата</th><th>Название</th><th>Категория</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
 
     <!-- Статистика -->
-    <div class="tab-pane" id="tab-stats">
-        <div class="stats-grid" id="statsGrid"></div>
-        <div class="card"><canvas id="categoryChart"></canvas></div>
-    </div>
+    <div class="tab-pane" id="tab-stats"><div class="stats-grid" id="statsGrid"></div><div class="card"><canvas id="categoryChart"></canvas></div></div>
 
     <!-- Список покупок -->
-    <div class="tab-pane" id="tab-shopping">
-        <div class="card">
-            <h3>Список покупок</h3>
-            <textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea>
-            <button id="addShoppingListBtn" style="margin: 8px 0;">📥 Добавить из JSON</button>
-            <div style="display: flex; gap: 10px;">
-                <input id="newItemName" placeholder="Новый товар" style="flex:2">
-                <button id="addItemBtn">➕ Добавить</button>
-            </div>
-            <div id="shoppingListContainer" style="margin-top: 16px;"></div>
-        </div>
-    </div>
+    <div class="tab-pane" id="tab-shopping"><div class="card"><h3>Список покупок</h3><textarea id="shoppingJsonInput" rows="2" placeholder='{"list":["Молоко","Хлеб"]}'></textarea><button id="addShoppingListBtn" style="margin:8px 0;">📥 Добавить из JSON</button><div style="display:flex; gap:10px;"><input id="newItemName" placeholder="Новый товар" style="flex:2"><button id="addItemBtn">➕ Добавить</button></div><div id="shoppingListContainer" style="margin-top:16px;"></div></div></div>
 
     <!-- Калории -->
-    <div class="tab-pane" id="tab-calories">
-        <div class="card">
-            <h3>Дневник питания</h3>
-            <div class="food-form">
-                <input id="foodName" placeholder="Продукт">
-                <input id="foodCalories" placeholder="ккал" type="number">
-                <input type="date" id="foodDate">
-                <button id="addFoodBtn">➕ Добавить</button>
-            </div>
-            <div class="stats-grid" style="grid-template-columns: repeat(2,1fr);">
-                <div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div>
-                <div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (2000)</div></div>
-            </div>
-            <table id="caloriesTable"><thead><tr><th>Дата</th><th>Продукт</th><th>ккал</th><th></th></tr></thead><tbody id="caloriesBody"></tbody></table>
-        </div>
-    </div>
+    <div class="tab-pane" id="tab-calories"><div class="card"><h3>Дневник питания</h3><div class="food-form"><input id="foodName" placeholder="Продукт"><input id="foodCalories" placeholder="ккал" type="number"><input type="date" id="foodDate"><button id="addFoodBtn">➕ Добавить</button></div><div class="stats-grid" style="grid-template-columns:repeat(2,1fr);"><div class="stat-card"><div class="stat-value" id="todayCalories">0</div><div>ккал сегодня</div></div><div class="stat-card"><div class="stat-value" id="caloriesLeft">0</div><div>Осталось (2000)</div></div></div><table id="caloriesTable"><thead><tr><th>Дата</th><th>Продукт</th><th>ккал</th><th></th></tr></thead><tbody id="caloriesBody"></tbody></table></div></div>
+    <div id="debugInfo" class="debug"></div>
 </div>
 
 <script>
-    // Данные
     let purchases = [], shoppingList = [], calories = [], token = null;
     const CLIENT_ID = '2ae78c4d63ab42ed95c3242c63579c3b';
     const REDIRECT_URI = window.location.href.split('#')[0];
     const FILE_PATH = '/budget_data.json';
 
-    // Загрузка/сохранение локально
+    function updateUI() {
+        const statusSpan = document.getElementById('authStatus');
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (token) {
+            statusSpan.innerHTML = '✅ Вошли в Яндекс';
+            logoutBtn.style.display = 'inline-block';
+        } else {
+            statusSpan.innerHTML = '❌ Не авторизованы';
+            logoutBtn.style.display = 'none';
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('yandex_token');
+        token = null;
+        updateUI();
+        alert('Вы вышли из аккаунта. Данные остались на устройстве.');
+    }
+
     function saveLocal() {
         localStorage.setItem('purchases', JSON.stringify(purchases));
         localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
@@ -149,10 +122,7 @@
         renderAll();
     }
 
-    // Яндекс.Диск
-    function getAuthUrl() {
-        return `https://oauth.yandex.ru/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
-    }
+    function getAuthUrl() { return `https://oauth.yandex.ru/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
 
     function checkAuth() {
         const hash = window.location.hash.substring(1);
@@ -161,10 +131,12 @@
             token = params.get('access_token');
             localStorage.setItem('yandex_token', token);
             window.location.hash = '';
+            updateUI();
             loadFromDisk();
             return true;
         }
         token = localStorage.getItem('yandex_token');
+        updateUI();
         if (token) loadFromDisk();
         return !!token;
     }
@@ -184,10 +156,14 @@
                 calories = json.calories || [];
                 saveLocal();
                 renderAll();
+                document.getElementById('debugInfo').innerHTML = '✅ Загружено с Диска';
             } else if (res.status === 404) {
                 await saveToDisk();
+                document.getElementById('debugInfo').innerHTML = '📄 Файл создан на Диске';
+            } else {
+                document.getElementById('debugInfo').innerHTML = `⚠️ Ошибка загрузки: ${res.status}`;
             }
-        } catch(e) { console.error('Ошибка загрузки', e); }
+        } catch(e) { document.getElementById('debugInfo').innerHTML = `❌ Ошибка: ${e.message}`; }
     }
 
     async function saveToDisk() {
@@ -198,22 +174,18 @@
                 method: 'GET',
                 headers: { 'Authorization': `OAuth ${token}` }
             }).then(r => r.json());
-            await fetch(uploadUrl.href, {
-                method: 'PUT',
-                body: JSON.stringify(content),
-                headers: { 'Content-Type': 'application/json' }
-            });
+            await fetch(uploadUrl.href, { method: 'PUT', body: JSON.stringify(content), headers: { 'Content-Type': 'application/json' } });
+            document.getElementById('debugInfo').innerHTML = '💾 Сохранено на Диск';
             return true;
-        } catch(e) { console.error('Ошибка сохранения', e); return false; }
+        } catch(e) { document.getElementById('debugInfo').innerHTML = `❌ Ошибка сохранения: ${e.message}`; return false; }
     }
 
-    // Вспомогательные функции
     function guessCategory(name) {
         const n = name.toLowerCase();
-        if (n.includes('молоко') || n.includes('кефир') || n.includes('творог')) return 'Молочные';
-        if (n.includes('хлеб') || n.includes('батон')) return 'Хлеб';
-        if (n.includes('яблок') || n.includes('банан')) return 'Фрукты';
-        if (n.includes('картош') || n.includes('огур') || n.includes('помидор')) return 'Овощи';
+        if (n.includes('молоко')||n.includes('кефир')) return 'Молочные';
+        if (n.includes('хлеб')||n.includes('батон')) return 'Хлеб';
+        if (n.includes('яблок')||n.includes('банан')) return 'Фрукты';
+        if (n.includes('картош')||n.includes('огур')) return 'Овощи';
         return 'Прочее';
     }
 
@@ -222,61 +194,33 @@
             const data = JSON.parse(jsonStr);
             const date = data.date || new Date().toISOString().slice(0,10);
             if (data.items && Array.isArray(data.items)) {
-                data.items.forEach(item => {
-                    purchases.push({
-                        id: Date.now() + Math.random(),
-                        date: date,
-                        name: item.name,
-                        price: item.price,
-                        quantity: item.quantity,
-                        total: item.total || (item.price * item.quantity),
-                        category: guessCategory(item.name)
-                    });
-                });
-                saveLocal();
-                renderAll();
-                saveToDisk();
+                data.items.forEach(item => purchases.push({ id: Date.now()+Math.random(), date, name: item.name, price: item.price, quantity: item.quantity, total: item.total||(item.price*item.quantity), category: guessCategory(item.name) }));
+                saveLocal(); renderAll(); saveToDisk();
                 return true;
             }
             return false;
-        } catch(e) { alert('Ошибка JSON: ' + e.message); return false; }
+        } catch(e) { alert('Ошибка JSON'); return false; }
     }
 
-    function deletePurchase(id) {
-        purchases = purchases.filter(p => p.id !== id);
-        saveLocal();
-        renderAll();
-        saveToDisk();
-    }
-
+    function deletePurchase(id) { purchases = purchases.filter(p => p.id !== id); saveLocal(); renderAll(); saveToDisk(); }
     function editPurchase(id) {
         const item = purchases.find(p => p.id === id);
         if (!item) return;
-        const newName = prompt('Новое название', item.name);
+        const newName = prompt('Название', item.name);
         const newPrice = parseFloat(prompt('Цена', item.price));
-        const newQty = parseFloat(prompt('Количество', item.quantity));
-        const newDate = prompt('Дата (ГГГГ-ММ-ДД)', item.date);
+        const newQty = parseFloat(prompt('Кол-во', item.quantity));
+        const newDate = prompt('Дата ГГГГ-ММ-ДД', item.date);
         if (newName && !isNaN(newPrice) && !isNaN(newQty) && newDate) {
-            item.name = newName;
-            item.price = newPrice;
-            item.quantity = newQty;
-            item.total = newPrice * newQty;
-            item.date = newDate;
-            item.category = guessCategory(newName);
-            saveLocal();
-            renderAll();
-            saveToDisk();
+            item.name = newName; item.price = newPrice; item.quantity = newQty; item.total = newPrice*newQty; item.date = newDate; item.category = guessCategory(newName);
+            saveLocal(); renderAll(); saveToDisk();
         }
     }
 
-    // Рендеры
     function renderPurchases() {
-        const searchQuery = document.getElementById('searchInput')?.value.toLowerCase() || '';
-        let filtered = purchases;
-        if (searchQuery) filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery));
-        const totalSum = filtered.reduce((s, p) => s + p.total, 0);
+        const q = document.getElementById('searchInput')?.value.toLowerCase() || '';
+        let filtered = purchases.filter(p => p.name.toLowerCase().includes(q));
+        const totalSum = filtered.reduce((s,p)=>s+p.total,0);
         document.getElementById('searchTotal').innerHTML = `🔎 Найдено: ${filtered.length}, сумма: ${totalSum.toFixed(2)} ₽`;
-
         const tbody = document.getElementById('tableBody');
         if (!tbody) return;
         tbody.innerHTML = '';
@@ -296,64 +240,32 @@
     }
 
     function renderStats() {
-        const total = purchases.reduce((s, p) => s + p.total, 0);
-        const avg = purchases.length ? total / purchases.length : 0;
-        document.getElementById('statsGrid').innerHTML = `
-            <div class="stat-card"><div class="stat-value">${total.toFixed(0)} ₽</div><div>Всего</div></div>
-            <div class="stat-card"><div class="stat-value">${purchases.length}</div><div>Покупок</div></div>
-            <div class="stat-card"><div class="stat-value">${avg.toFixed(0)} ₽</div><div>Средний чек</div></div>
-        `;
+        const total = purchases.reduce((s,p)=>s+p.total,0);
+        const avg = purchases.length ? total/purchases.length : 0;
+        document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="stat-value">${total.toFixed(0)} ₽</div><div>Всего</div></div><div class="stat-card"><div class="stat-value">${purchases.length}</div><div>Покупок</div></div><div class="stat-card"><div class="stat-value">${avg.toFixed(0)} ₽</div><div>Средний чек</div></div>`;
         const cats = {};
-        purchases.forEach(p => cats[p.category] = (cats[p.category] || 0) + p.total);
+        purchases.forEach(p => cats[p.category] = (cats[p.category]||0)+p.total);
         const ctx = document.getElementById('categoryChart')?.getContext('2d');
         if (window.myChart) window.myChart.destroy();
-        if (ctx && Object.keys(cats).length) {
-            window.myChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: Object.keys(cats), datasets: [{ label: '₽', data: Object.values(cats), backgroundColor: '#10b981' }] }
-            });
-        }
+        if (ctx && Object.keys(cats).length) window.myChart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: '₽', data: Object.values(cats), backgroundColor: '#10b981' }] } });
     }
 
     function renderShoppingList() {
         const container = document.getElementById('shoppingListContainer');
-        if (!shoppingList.length) { container.innerHTML = '<div style="padding:16px;text-align:center;">✨ Список пуст</div>'; return; }
+        if (!shoppingList.length) { container.innerHTML = '<div style="padding:16px;text-align:center;">✨ Пусто</div>'; return; }
         let html = '';
-        shoppingList.forEach((item, idx) => {
-            html += `<div class="shopping-item">
-                        <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShopping(${idx})">
-                        <span class="item-name" style="${item.checked ? 'text-decoration:line-through;opacity:0.6' : ''}">${escapeHtml(item.name)}</span>
-                        <button class="delete-btn" onclick="removeShoppingItem(${idx})">Удалить</button>
-                    </div>`;
-        });
+        shoppingList.forEach((item, idx) => html += `<div class="shopping-item"><input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShopping(${idx})"><span class="item-name" style="${item.checked ? 'text-decoration:line-through;opacity:0.6' : ''}">${escapeHtml(item.name)}</span><button class="delete-btn" onclick="removeShoppingItem(${idx})">Удалить</button></div>`);
         container.innerHTML = html;
     }
-
     function toggleShopping(idx) { shoppingList[idx].checked = !shoppingList[idx].checked; saveLocal(); renderShoppingList(); saveToDisk(); }
-    function removeShoppingItem(idx) { shoppingList.splice(idx, 1); saveLocal(); renderShoppingList(); saveToDisk(); }
-    function addShoppingItem(name) { if (name && !shoppingList.some(i => i.name === name)) { shoppingList.push({ name, checked: false }); saveLocal(); renderShoppingList(); saveToDisk(); } }
-    function addShoppingListFromJson(jsonStr) {
-        try { const data = JSON.parse(jsonStr); if (data.list) { data.list.forEach(n => { if (n && !shoppingList.some(i => i.name === n)) shoppingList.push({ name: n, checked: false }); }); saveLocal(); renderShoppingList(); saveToDisk(); return true; } } catch(e) { alert('Ошибка JSON'); return false; }
-    }
-
-    function addFood() {
-        const name = document.getElementById('foodName').value;
-        const cal = parseInt(document.getElementById('foodCalories').value);
-        const date = document.getElementById('foodDate').value || new Date().toISOString().slice(0,10);
-        if (!name || isNaN(cal)) return alert('Введите продукт и ккал');
-        calories.push({ id: Date.now(), date, name, calories: cal });
-        saveLocal();
-        renderCalories();
-        saveToDisk();
-        document.getElementById('foodName').value = '';
-        document.getElementById('foodCalories').value = '';
-    }
-
+    function removeShoppingItem(idx) { shoppingList.splice(idx,1); saveLocal(); renderShoppingList(); saveToDisk(); }
+    function addShoppingItem(name) { if (name && !shoppingList.some(i=>i.name===name)) { shoppingList.push({ name, checked:false }); saveLocal(); renderShoppingList(); saveToDisk(); } }
+    function addShoppingListFromJson(jsonStr) { try { const data = JSON.parse(jsonStr); if (data.list) { data.list.forEach(n => { if (n && !shoppingList.some(i=>i.name===n)) shoppingList.push({ name:n, checked:false }); }); saveLocal(); renderShoppingList(); saveToDisk(); return true; } } catch(e) { alert('Ошибка JSON'); return false; } }
+    function addFood() { const name = document.getElementById('foodName').value; const cal = parseInt(document.getElementById('foodCalories').value); const date = document.getElementById('foodDate').value || new Date().toISOString().slice(0,10); if (!name || isNaN(cal)) return alert('Введите продукт и ккал'); calories.push({ id: Date.now(), date, name, calories: cal }); saveLocal(); renderCalories(); saveToDisk(); document.getElementById('foodName').value = ''; document.getElementById('foodCalories').value = ''; }
     function deleteCalorie(id) { calories = calories.filter(c => c.id !== id); saveLocal(); renderCalories(); saveToDisk(); }
-
     function renderCalories() {
         const today = new Date().toISOString().slice(0,10);
-        const todayCal = calories.filter(c => c.date === today).reduce((s, c) => s + c.calories, 0);
+        const todayCal = calories.filter(c=>c.date===today).reduce((s,c)=>s+c.calories,0);
         document.getElementById('todayCalories').innerHTML = todayCal;
         document.getElementById('caloriesLeft').innerHTML = 2000 - todayCal;
         const tbody = document.getElementById('caloriesBody');
@@ -369,44 +281,22 @@
             td.appendChild(del);
         }
     }
-
-    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
     function renderAll() { renderPurchases(); renderStats(); renderShoppingList(); renderCalories(); }
 
-    // Обработчики
-    document.getElementById('addJsonBtn').onclick = () => { if (addReceipt(document.getElementById('jsonInput').value)) document.getElementById('jsonInput').value = ''; };
-    document.getElementById('addManualBtn').onclick = () => {
-        const name = document.getElementById('manualName').value;
-        const price = parseFloat(document.getElementById('manualPrice').value);
-        const qty = parseFloat(document.getElementById('manualQuantity').value);
-        const date = document.getElementById('manualDate').value;
-        if (name && price) {
-            addReceipt(JSON.stringify({ date, items: [{ name, price, quantity: qty, total: price * qty }] }));
-            document.getElementById('manualName').value = '';
-            document.getElementById('manualPrice').value = '';
-        } else alert('Заполните название и цену');
-    };
+    document.getElementById('addJsonBtn').onclick = () => { if(addReceipt(document.getElementById('jsonInput').value)) document.getElementById('jsonInput').value=''; };
+    document.getElementById('addManualBtn').onclick = () => { const n=document.getElementById('manualName').value, p=parseFloat(document.getElementById('manualPrice').value), q=parseFloat(document.getElementById('manualQuantity').value), d=document.getElementById('manualDate').value; if(n && p) { addReceipt(JSON.stringify({ date:d, items:[{ name:n, price:p, quantity:q, total:p*q }] })); document.getElementById('manualName').value=''; document.getElementById('manualPrice').value=''; } else alert('Заполните название и цену'); };
     document.getElementById('searchInput').oninput = () => renderPurchases();
-    document.getElementById('addShoppingListBtn').onclick = () => { addShoppingListFromJson(document.getElementById('shoppingJsonInput').value); document.getElementById('shoppingJsonInput').value = ''; };
-    document.getElementById('addItemBtn').onclick = () => { addShoppingItem(document.getElementById('newItemName').value); document.getElementById('newItemName').value = ''; };
+    document.getElementById('addShoppingListBtn').onclick = () => { addShoppingListFromJson(document.getElementById('shoppingJsonInput').value); document.getElementById('shoppingJsonInput').value=''; };
+    document.getElementById('addItemBtn').onclick = () => { addShoppingItem(document.getElementById('newItemName').value); document.getElementById('newItemName').value=''; };
     document.getElementById('addFoodBtn').onclick = addFood;
-    document.getElementById('syncBtn').onclick = async () => { if (token) { await saveToDisk(); alert('✅ Сохранено на Диск'); } else alert('Сначала войдите через Яндекс'); };
+    document.getElementById('syncBtn').onclick = async () => { if (token) { await saveToDisk(); alert('Синхронизация завершена'); } else alert('Сначала войдите'); };
     document.getElementById('loginBtn').onclick = () => { window.location.href = getAuthUrl(); };
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        };
-    });
+    document.getElementById('logoutBtn').onclick = () => { logout(); };
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active'); });
     if (localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark');
     document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('darkMode', document.body.classList.contains('dark') ? 'enabled' : 'disabled'); };
-
-    window.toggleShopping = toggleShopping;
-    window.removeShoppingItem = removeShoppingItem;
-    window.deleteCalorie = deleteCalorie;
-
+    window.toggleShopping = toggleShopping; window.removeShoppingItem = removeShoppingItem; window.deleteCalorie = deleteCalorie;
     checkAuth();
     loadLocal();
 </script>
