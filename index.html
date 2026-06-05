@@ -38,19 +38,29 @@
         .shopping-item .item-name { flex: 1; }
         .food-form { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
         .food-form input { flex: 1; margin-bottom: 0; }
-        .file-buttons { display: flex; gap: 8px; }
+        .settings-panel { background: #f1f5f9; border-radius: 28px; padding: 16px; margin-bottom: 20px; }
+        .dark .settings-panel { background: #0f172a; }
+        .sync-status { font-size: 12px; margin-top: 8px; color: #10b981; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>🏠 Мои чеки + 🍎 Калории</h1>
-        <div class="file-buttons">
-            <button id="exportBtn" class="btn-icon">💾 Экспорт</button>
-            <label for="importFileInput" class="btn-icon" style="cursor: pointer;">📂 Импорт</label>
-            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+        <div>
+            <button id="syncToGistBtn" class="btn-icon">☁️ Сохранить</button>
+            <button id="loadFromGistBtn" class="btn-icon">☁️ Загрузить</button>
+            <button id="settingsBtn" class="btn-icon">⚙️</button>
             <button id="themeToggle" class="btn-icon">🌙</button>
         </div>
+    </div>
+
+    <div id="settingsPanel" class="settings-panel" style="display: none;">
+        <h3>⚙️ Настройки GitHub Gist</h3>
+        <input type="text" id="gistId" placeholder="Gist ID (например: abc123def456)">
+        <input type="password" id="githubToken" placeholder="GitHub Token (ghp_...)">
+        <button id="saveSettingsBtn">💾 Сохранить</button>
+        <div id="syncStatus" class="sync-status"></div>
     </div>
 
     <div class="tabs">
@@ -77,47 +87,119 @@
 
 <script>
     let purchases = [], shoppingList = [], calories = [];
+    let gistId = '', githubToken = '';
 
+    // Локальное сохранение
     function saveLocal() {
         localStorage.setItem('purchases', JSON.stringify(purchases));
         localStorage.setItem('shoppingList', JSON.stringify(shoppingList));
         localStorage.setItem('calories', JSON.stringify(calories));
+        localStorage.setItem('gistId', gistId);
+        localStorage.setItem('githubToken', githubToken);
     }
 
     function loadLocal() {
         purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
         shoppingList = JSON.parse(localStorage.getItem('shoppingList') || '[]');
         calories = JSON.parse(localStorage.getItem('calories') || '[]');
+        gistId = localStorage.getItem('gistId') || '';
+        githubToken = localStorage.getItem('githubToken') || '';
         renderAll();
+        updateSettingsUI();
     }
 
-    function exportData() {
+    function updateSettingsUI() {
+        document.getElementById('gistId').value = gistId;
+        document.getElementById('githubToken').value = githubToken;
+    }
+
+    // === СИНХРОНИЗАЦИЯ С GITHUB GIST ===
+    async function syncToGist() {
+        if (!gistId || !githubToken) {
+            alert('⚠️ Сначала настройте Gist ID и Token в ⚙️');
+            return;
+        }
+        const statusDiv = document.getElementById('syncStatus');
+        statusDiv.innerHTML = '⏳ Сохранение на GitHub...';
         const data = { purchases, shoppingList, calories };
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `budget_${new Date().toISOString().slice(0,19)}.json`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        alert('✅ Данные сохранены в файл');
+        try {
+            // Получаем текущий gist, чтобы узнать sha
+            const getRes = await fetch(`https://api.github.com/gists/${gistId}`, {
+                headers: { 'Authorization': `token ${githubToken}` }
+            });
+            if (!getRes.ok) throw new Error('Gist не найден');
+            const gistData = await getRes.json();
+            const sha = gistData.files['budget_data.json']?.sha || null;
+            // Обновляем gist
+            const updateRes = await fetch(`https://api.github.com/gists/${gistId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    files: {
+                        'budget_data.json': {
+                            content: JSON.stringify(data, null, 2),
+                            ...(sha && { sha })
+                        }
+                    }
+                })
+            });
+            if (!updateRes.ok) throw new Error('Ошибка сохранения');
+            statusDiv.innerHTML = '✅ Сохранено на GitHub!';
+            setTimeout(() => { if (statusDiv) statusDiv.innerHTML = ''; }, 3000);
+        } catch(e) {
+            statusDiv.innerHTML = `❌ Ошибка: ${e.message}`;
+        }
     }
 
-    function importData(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.purchases) purchases = data.purchases;
-                if (data.shoppingList) shoppingList = data.shoppingList;
-                if (data.calories) calories = data.calories;
-                saveLocal();
-                renderAll();
-                alert('✅ Данные импортированы');
-            } catch(err) { alert('Ошибка файла: ' + err.message); }
-        };
-        reader.readAsText(file);
+    async function loadFromGist() {
+        if (!gistId || !githubToken) {
+            alert('⚠️ Сначала настройте Gist ID и Token в ⚙️');
+            return;
+        }
+        const statusDiv = document.getElementById('syncStatus');
+        statusDiv.innerHTML = '⏳ Загрузка с GitHub...';
+        try {
+            const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+                headers: { 'Authorization': `token ${githubToken}` }
+            });
+            if (!res.ok) throw new Error('Gist не найден');
+            const gistData = await res.json();
+            const content = gistData.files['budget_data.json']?.content;
+            if (!content) throw new Error('Файл budget_data.json не найден');
+            const data = JSON.parse(content);
+            if (data.purchases) purchases = data.purchases;
+            if (data.shoppingList) shoppingList = data.shoppingList;
+            if (data.calories) calories = data.calories;
+            saveLocal();
+            renderAll();
+            statusDiv.innerHTML = '✅ Загружено с GitHub!';
+            setTimeout(() => { if (statusDiv) statusDiv.innerHTML = ''; }, 3000);
+        } catch(e) {
+            statusDiv.innerHTML = `❌ Ошибка: ${e.message}`;
+        }
     }
 
+    function saveSettings() {
+        const newGistId = document.getElementById('gistId').value.trim();
+        const newToken = document.getElementById('githubToken').value.trim();
+        if (!newGistId || !newToken) {
+            alert('Заполните оба поля');
+            return;
+        }
+        gistId = newGistId;
+        githubToken = newToken;
+        saveLocal();
+        document.getElementById('syncStatus').innerHTML = '✅ Настройки сохранены';
+        setTimeout(() => {
+            const div = document.getElementById('syncStatus');
+            if (div) div.innerHTML = '';
+        }, 2000);
+    }
+
+    // Остальные функции (покупки, калории, список) — без изменений
     function guessCategory(name) {
         const n = name.toLowerCase();
         if (n.includes('молоко')||n.includes('кефир')) return 'Молочные';
@@ -224,14 +306,17 @@
     function escapeHtml(str) { return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
     function renderAll() { renderPurchases(); renderStats(); renderShoppingList(); renderCalories(); }
 
+    // === ОБРАБОТЧИКИ ===
     document.getElementById('addJsonBtn').onclick = () => { if(addReceipt(document.getElementById('jsonInput').value)) document.getElementById('jsonInput').value=''; };
     document.getElementById('addManualBtn').onclick = () => { const n=document.getElementById('manualName').value, p=parseFloat(document.getElementById('manualPrice').value), q=parseFloat(document.getElementById('manualQuantity').value), d=document.getElementById('manualDate').value; if(n && p) { addReceipt(JSON.stringify({ date:d, items:[{ name:n, price:p, quantity:q, total:p*q }] })); document.getElementById('manualName').value=''; document.getElementById('manualPrice').value=''; } else alert('Заполните название и цену'); };
     document.getElementById('searchInput').oninput = () => renderPurchases();
     document.getElementById('addShoppingListBtn').onclick = () => { addShoppingListFromJson(document.getElementById('shoppingJsonInput').value); document.getElementById('shoppingJsonInput').value=''; };
     document.getElementById('addItemBtn').onclick = () => { addShoppingItem(document.getElementById('newItemName').value); document.getElementById('newItemName').value=''; };
     document.getElementById('addFoodBtn').onclick = addFood;
-    document.getElementById('exportBtn').onclick = exportData;
-    document.getElementById('importFileInput').onchange = (e) => { if(e.target.files.length) importData(e.target.files[0]); e.target.value = ''; };
+    document.getElementById('syncToGistBtn').onclick = syncToGist;
+    document.getElementById('loadFromGistBtn').onclick = loadFromGist;
+    document.getElementById('settingsBtn').onclick = () => { const p = document.getElementById('settingsPanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
+    document.getElementById('saveSettingsBtn').onclick = saveSettings;
     document.querySelectorAll('.tab-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active')); document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active'); });
     if (localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark');
     document.getElementById('themeToggle').onclick = () => { document.body.classList.toggle('dark'); localStorage.setItem('darkMode', document.body.classList.contains('dark') ? 'enabled' : 'disabled'); };
